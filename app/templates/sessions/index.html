@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-header">
+    <div>
+        <h1 class="page-title">Academic Sessions</h1>
+        <p class="page-subtitle">Manage academic years, terms, and timelines</p>
+    </div>
+    <div class="header-actions">
+        <button id="add-session-btn" class="btn btn-primary">
+            <span class="material-symbols-outlined" style="font-size:18px">add_circle</span>
+            New Session
+        </button>
+    </div>
+</div>
+
+<!-- Session + Term Layout -->
+<div class="session-layout">
+
+    <!-- Left: Session List -->
+    <div class="section-container">
+        <h2 class="section-title">
+            <span class="material-symbols-outlined"
+                style="font-size:18px; vertical-align:middle; margin-right:6px;">calendar_month</span>
+            Academic Sessions
+        </h2>
+
+        <div id="session-list" style="display:flex; flex-direction:column; gap:10px;">
+            {% if sessions %}
+            {% for session in sessions %}
+            <div class="session-card" data-session-id="{{ session.id }}" data-session-name="{{ session.name }}">
+                <div class="session-info">
+                    <span class="session-name">{{ session.name }}</span>
+                    <div class="session-meta">
+                        {{ session.start_date or '' }} — {{ session.end_date or '' }}
+                    </div>
+                </div>
+                <span class="material-symbols-outlined"
+                    style="color:var(--text-light); font-size:20px;">chevron_right</span>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="no-data-msg" style="text-align:center; padding:40px 20px; color:var(--text-muted);">
+                <span class="material-symbols-outlined"
+                    style="font-size:48px; display:block; margin-bottom:12px; opacity:0.3;">event_busy</span>
+                No academic sessions created yet
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Right: Term Details -->
+    <div class="section-container">
+        <div id="term-section" style="display: none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+                <h2 class="section-title" id="selected-session-title" style="margin-bottom:0;">Select a Session</h2>
+                <button id="add-term-btn" class="btn btn-sm btn-outline">
+                    <span class="material-symbols-outlined" style="font-size:16px">add</span>
+                    Add Term
+                </button>
+            </div>
+
+            <div id="term-list">
+                <!-- Terms loaded dynamically by sessions.js -->
+            </div>
+        </div>
+
+        <!-- Default empty state -->
+        <div id="term-empty-state" class="empty-state">
+            <span class="material-symbols-outlined">event_note</span>
+            <h3>Term Details</h3>
+            <p>Select a session from the list to view its terms</p>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ ADD SESSION MODAL ═══ -->
+<div id="session-modal" class="modal-overlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>
+                <span class="material-symbols-outlined"
+                    style="font-size:20px; vertical-align:middle; margin-right:6px;">date_range</span>
+                New Academic Session
+            </h3>
+            <button class="modal-close close-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="form-errors" class="error-message"
+                style="display:none; padding:10px; background:rgba(231,76,60,0.08); border-radius:8px; margin-bottom:16px;">
+            </div>
+
+            <form id="add-session-form">
+                <h4
+                    style="font-size:13px; font-weight:700; margin-bottom:12px; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px;">
+                    Session Details</h4>
+
+                <div class="form-group">
+                    <label>Session Name (YYYY/YYYY) *</label>
+                    <input type="text" name="name" class="form-control" placeholder="e.g. 2024/2025" required>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                    <div class="form-group">
+                        <label>Start Date *</label>
+                        <input type="date" name="start_date" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>End Date *</label>
+                        <input type="date" name="end_date" class="form-control" required>
+                    </div>
+                </div>
+
+                <h4
+                    style="font-size:13px; font-weight:700; margin:20px 0 12px; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px;">
+                    First Term Dates</h4>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                    <div class="form-group">
+                        <label>Term Number *</label>
+                        <select name="term_number" class="form-control" required>
+                            <option value="1">1st Term</option>
+                            <option value="2">2nd Term</option>
+                            <option value="3">3rd Term</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="visibility:hidden;">
+                        <!-- spacer -->
+                    </div>
+                    <div class="form-group">
+                        <label>Resumption Date *</label>
+                        <input type="date" name="resumption_date" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Vacation Date *</label>
+                        <input type="date" name="vacation_date" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="modal-footer" style="padding:16px 0 0; border-top:none;">
+                    <button type="button" class="btn btn-light close-modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="material-symbols-outlined" style="font-size:18px">save</span>
+                        Create Session
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ ADD TERM MODAL ═══ -->
+<div id="term-modal" class="modal-overlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>
+                <span class="material-symbols-outlined"
+                    style="font-size:20px; vertical-align:middle; margin-right:6px;">event</span>
+                Add New Term
+            </h3>
+            <button class="modal-close close-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="add-term-form">
+                <input type="hidden" name="session_id" id="modal-session-id">
+
+                <div class="form-group">
+                    <label>Term Number *</label>
+                    <select name="term_number" class="form-control" required>
+                        <option value="1">1st Term</option>
+                        <option value="2">2nd Term</option>
+                        <option value="3">3rd Term</option>
+                    </select>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                    <div class="form-group">
+                        <label>Resumption Date *</label>
+                        <input type="date" name="resumption_date" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Vacation Date *</label>
+                        <input type="date" name="vacation_date" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="modal-footer" style="padding:16px 0 0; border-top:none;">
+                    <button type="button" class="btn btn-light close-modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="material-symbols-outlined" style="font-size:18px">add</span>
+                        Add Term
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Hide empty state when terms are shown */
+    #term-section[style*="block"]~#term-empty-state {
+        display: none !important;
+    }
+
+    .term-card {
+        border: 1px solid var(--border-light);
+        transition: all var(--duration) var(--ease);
+    }
+
+    .term-card.is-active {
+        border-color: var(--primary);
+        background: var(--accent-light);
+    }
+
+    .term-info h3 {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 4px;
+    }
+
+    .term-dates {
+        font-size: 12px;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .term-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .active-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        background: rgba(55, 94, 72, 0.1);
+        color: var(--primary);
+    }
+
+    .no-data-msg {
+        text-align: center;
+        padding: 30px 20px;
+        color: var(--text-muted);
+        font-size: 14px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/sessions.js') }}?v=2"></script>
+<script>
+    // Show/hide empty state based on term section visibility
+    document.addEventListener('DOMContentLoaded', function () {
+        const termSection = document.getElementById('term-section');
+        const emptyState = document.getElementById('term-empty-state');
+
+        const observer = new MutationObserver(function () {
+            if (termSection.style.display === 'block') {
+                emptyState.style.display = 'none';
+            } else {
+                emptyState.style.display = '';
+            }
+        });
+
+        observer.observe(termSection, { attributes: true, attributeFilter: ['style'] });
+    });
+</script>
+{% endblock %}

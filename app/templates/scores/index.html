@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-header">
+    <div>
+        <h1 class="page-title">Score Entry</h1>
+        <p class="page-subtitle">Record and manage student performance</p>
+    </div>
+    <div class="header-actions">
+        <button id="header-save-btn" class="btn btn-success"><i class="fas fa-save"></i> Save Scores</button>
+    </div>
+</div>
+
+<div class="dashboard-container">
+
+    <!-- Filter Panel -->
+    <div class="filter-panel">
+        <div class="filter-group">
+            <label>Entry Mode</label>
+            <div class="mode-toggle">
+                <button type="button" class="btn btn-mode active" data-mode="student">By Student</button>
+                <button type="button" class="btn btn-mode" data-mode="subject">By Subject</button>
+            </div>
+        </div>
+        <div class="filter-group">
+            <label>Session</label>
+            <select id="session-select" class="form-control">
+                <option value="">Select Session</option>
+                {% for session in sessions %}
+                <option value="{{ session.id }}">{{ session.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Term</label>
+            <select id="term-select" class="form-control">
+                <option value="">Select Term</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Class</label>
+            <select id="class-select" class="form-control">
+                <option value="">Select Class</option>
+                {% for cls in classes %}
+                <option value="{{ cls.id }}">{{ cls.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group" id="student-filter-group">
+            <label>Student</label>
+            <select id="student-select" class="form-control">
+                <option value="">Select Student</option>
+            </select>
+        </div>
+        <div class="filter-group" id="subject-filter-group" style="display: none;">
+            <label>Subject</label>
+            <select id="subject-select" class="form-control">
+                <option value="">Select Subject</option>
+            </select>
+        </div>
+        <div class="filter-actions" style="margin-left: auto; display: flex; gap: 10px;">
+            <button id="export-btn" class="btn btn-secondary" title="Export scores to Excel"><i
+                    class="fas fa-file-excel"></i> Export</button>
+            <button id="import-btn" class="btn btn-secondary" title="Import scores from Excel"><i
+                    class="fas fa-file-import"></i> Import</button>
+            <input type="file" id="import-file" accept=".xlsx" style="display: none;">
+            <button id="save-btn" class="btn btn-primary"><i class="fas fa-save"></i> Save Scores</button>
+        </div>
+    </div>
+
+    <!-- Score Table -->
+    <div class="score-grid-container">
+        <table class="score-table" id="score-table">
+            <thead>
+                <tr>
+                    <th style="width: 25%;" id="row-header">Subject</th>
+                    <th style="width: 10%;">CA (30)</th>
+                    <th style="width: 10%;">Exam (70)</th>
+                    <th style="width: 10%;">Total</th>
+                    <th style="width: 10%;">Grade</th>
+                    <th style="width: 8%;">Pos</th>
+                    <th style="width: 8%;">High</th>
+                    <th style="width: 8%;">Low</th>
+                    <th style="width: 8%;">Avg</th>
+                </tr>
+            </thead>
+            <tbody id="score-tbody">
+                <tr>
+                    <td colspan="9" class="no-data">Select a student to enter scores</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/scores.js') }}?v=3"></script>
+{% endblock %}

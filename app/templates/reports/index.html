@@ -1,0 +1,1153 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="nano-layout">
+    <!-- Top Action Bar -->
+    <div class="nano-glass-header">
+        <div class="brand">
+            <i class="fas fa-chart-pie"></i> Report<span class="highlight">Studio</span>
+        </div>
+        <div class="controls">
+            <div class="select-wrapper">
+                <select id="report-session" class="nano-select">
+                    {% for session in sessions %}
+                    <option value="{{ session.id }}" {% if current_session and session.id==current_session.id
+                        %}selected{% endif %}>{{ session.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="select-wrapper">
+                <select id="report-term" class="nano-select">
+                    {% if current_term %}
+                    <option value="{{ current_term.id }}" selected>Term {{ current_term.term_number }}</option>
+                    {% endif %}
+                </select>
+            </div>
+            <div class="select-wrapper main-selector">
+                <select id="report-class" class="nano-select">
+                    <option value="">-- Select Class --</option>
+                    {% for cls in classes %}
+                    <option value="{{ cls.id }}">{{ cls.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="nano-workspace" id="manager-container" style="display: none;">
+
+        <!-- Left Panel: Roster -->
+        <div class="nano-sidebar">
+            <div class="sidebar-top">
+                <h3>Class Roster</h3>
+                <div class="nano-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="student-search" placeholder="Find student...">
+                </div>
+            </div>
+            <div id="student-list" class="roster-list">
+                <!-- Students injected here -->
+                <div class="empty-roster">Select a class first</div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Editor -->
+        <div class="nano-editor">
+            <!-- Empty State -->
+            <div id="editor-empty-state" class="editor-placeholder">
+                <div class="placeholder-icon">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+                <h2>Student Workspace</h2>
+                <p>Select a student from the roster to begin grading.</p>
+            </div>
+
+            <!-- Active Content -->
+            <div id="editor-content" style="display: none;">
+                <!-- Action Bar -->
+                <div class="report-action-bar">
+                    <!-- Tabs Navigation -->
+                    <div class="nano-tabs">
+                        <button class="tab-btn active" data-tab="tab-report-card">
+                            <i class="fas fa-file-alt"></i> Report Card
+                        </button>
+                        <button class="tab-btn" data-tab="tab-skills">
+                            <i class="fas fa-star"></i> Traits & Skills
+                        </button>
+                        <button class="tab-btn" data-tab="tab-remarks">
+                            <i class="fas fa-comment-alt"></i> Remarks
+                        </button>
+                    </div>
+                    <div class="action-box">
+                        <button id="save-generate-btn" class="nano-btn btn-primary">
+                            <i class="fas fa-print"></i> Save & Print
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab: Report Card Preview -->
+                <div id="tab-report-card" class="tab-pane active">
+                    <div class="report-card" id="report-card-preview">
+                        <!-- School Header -->
+                        <div class="rc-header">
+                            <div class="rc-logo">
+                                <div id="rc-logo-placeholder" class="rc-logo-circle">
+                                    <i class="fas fa-school"></i>
+                                </div>
+                            </div>
+                            <div class="rc-school-info">
+                                <h1 id="rc-school-name">School Name</h1>
+                                <p id="rc-school-address">School Address</p>
+                                <p id="rc-school-website" class="rc-website"></p>
+                            </div>
+                            <div class="rc-passport">
+                                <div class="rc-passport-box" id="rc-passport-box"
+                                    style="cursor: pointer; position: relative;" title="Click to upload photo">
+                                    <img id="rc-student-photo" src="" alt="Student Photo"
+                                        style="display: none; width: 100%; height: 100%; object-fit: cover; border-radius: 4px;">
+                                    <span id="rc-student-initials">AB</span>
+                                    <div class="upload-overlay"
+                                        style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; border-radius: 4px;">
+                                        <i class="fas fa-camera" style="color: white; font-size: 24px;"></i>
+                                    </div>
+                                </div>
+                                <input type="file" id="photo-upload-input" accept="image/*" style="display: none;">
+                            </div>
+                        </div>
+
+                        <!-- Student Info Box -->
+                        <div class="rc-info-grid">
+                            <div class="rc-info-row">
+                                <div class="rc-info-cell rc-info-wide">
+                                    <span class="rc-label">Name:</span>
+                                    <span class="rc-value" id="rc-student-name">STUDENT NAME</span>
+                                </div>
+                                <div class="rc-info-cell">
+                                    <span class="rc-label">Date:</span>
+                                    <span class="rc-value" id="rc-date"></span>
+                                </div>
+                            </div>
+                            <div class="rc-info-row">
+                                <div class="rc-info-cell">
+                                    <span class="rc-label">Student Term:</span>
+                                    <span class="rc-value" id="rc-term"></span>
+                                </div>
+                                <div class="rc-info-cell">
+                                    <span class="rc-label">Class:</span>
+                                    <span class="rc-value" id="rc-class"></span>
+                                </div>
+                            </div>
+                            <div class="rc-info-row">
+                                <div class="rc-info-cell">
+                                    <span class="rc-label">No. of Term:</span>
+                                    <span class="rc-value" id="rc-gender"></span>
+                                </div>
+                                <div class="rc-info-cell">
+                                    <span class="rc-label">Position:</span>
+                                    <span class="rc-value" id="rc-position"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Academic Report Title Bar -->
+                        <div class="rc-title-bar">ACADEMIC REPORT</div>
+
+                        <!-- Academic Scores Table -->
+                        <table class="rc-academic-table">
+                            <thead>
+                                <tr>
+                                    <th class="rc-th-subject">Subject</th>
+                                    <th class="rc-th-score">Score</th>
+                                    <th class="rc-th-grade">Grade</th>
+                                    <th class="rc-th-comment">Teacher's Comment</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rc-academic-body">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+
+                        <!-- Grade Key -->
+                        <div class="rc-grade-key">
+                            <table>
+                                <tr>
+                                    <td class="rc-gk-label">Grades</td>
+                                    <td>A (70-100)</td>
+                                    <td>B (60-69)</td>
+                                    <td>C (50-59)</td>
+                                    <td>D (45-49)</td>
+                                    <td>E (40-44)</td>
+                                    <td>F (0-39)</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <!-- Bottom Section: Attendance & Psychomotor Skills -->
+                        <div class="rc-bottom-section">
+                            <!-- Attendance -->
+                            <div class="rc-attendance">
+                                <div class="rc-section-title">Attendance & Behaviour</div>
+                                <table class="rc-att-table">
+                                    <tr>
+                                        <td class="rc-att-label">Attendance</td>
+                                        <td id="rc-att-present" class="rc-att-value">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="rc-att-label">Punctuality</td>
+                                        <td id="rc-skill-punctuality-text" class="rc-att-value">Good</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="rc-att-label">Neatness</td>
+                                        <td id="rc-skill-neatness-text" class="rc-att-value">Good</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="rc-att-label">Handwriting</td>
+                                        <td id="rc-skill-handwriting-text" class="rc-att-value">Good</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="rc-att-label">Politeness</td>
+                                        <td id="rc-skill-politeness-text" class="rc-att-value">Good</td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- Psychomotor Skills -->
+                            <div class="rc-psychomotor">
+                                <div class="rc-section-title">Psychomotor Skills</div>
+                                <table class="rc-psych-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Rating</th>
+                                            <th>Name</th>
+                                            <th>Rating</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Handwriting</td>
+                                            <td id="rc-psych-handwriting">Good</td>
+                                            <td>Verbal Fluency</td>
+                                            <td id="rc-psych-attentiveness">Good</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Games & Sports</td>
+                                            <td id="rc-psych-sports">Good</td>
+                                            <td>Drawing</td>
+                                            <td id="rc-psych-drawing">Good</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Handling Tools</td>
+                                            <td id="rc-psych-tools">Good</td>
+                                            <td></td>
+                                            <td></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Teacher's Comment -->
+                        <div class="rc-remark-section">
+                            <span class="rc-remark-label">Teacher's Comment:</span>
+                            <span class="rc-remark-text" id="rc-teacher-remark">-</span>
+                        </div>
+
+                        <!-- Principal's Remark -->
+                        <div class="rc-remark-section">
+                            <span class="rc-remark-label">Principal's Remark:</span>
+                            <span class="rc-remark-text" id="rc-principal-remark">-</span>
+                        </div>
+
+                        <!-- Signature -->
+                        <div class="rc-signature-section">
+                            <div class="rc-sig-line">
+                                <div class="rc-sig-placeholder"></div>
+                                <span>Class Teacher</span>
+                            </div>
+                            <div class="rc-sig-line">
+                                <div class="rc-sig-placeholder"></div>
+                                <span>Principal's Signature</span>
+                            </div>
+                            <div class="rc-stamp-box">
+                                <span>School Stamp</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Skills (Star Ratings) -->
+                <div id="tab-skills" class="tab-pane">
+                    <form id="skills-form">
+                        <div class="skills-split">
+                            <div class="skill-group">
+                                <h4><i class="fas fa-running"></i> Psychomotor</h4>
+                                <div class="skill-row">
+                                    <label>Handwriting</label>
+                                    <div class="star-rating" data-name="handwriting">
+                                        <i class="fas fa-star" data-val="1"></i>
+                                        <i class="fas fa-star" data-val="2"></i>
+                                        <i class="fas fa-star" data-val="3"></i>
+                                        <i class="fas fa-star" data-val="4"></i>
+                                        <i class="fas fa-star" data-val="5"></i>
+                                        <input type="hidden" name="handwriting" value="3">
+                                    </div>
+                                </div>
+                                <div class="skill-row">
+                                    <label>Games & Sports</label>
+                                    <div class="star-rating" data-name="sports">
+                                        <i class="fas fa-star" data-val="1"></i>
+                                        <i class="fas fa-star" data-val="2"></i>
+                                        <i class="fas fa-star" data-val="3"></i>
+                                        <i class="fas fa-star" data-val="4"></i>
+                                        <i class="fas fa-star" data-val="5"></i>
+                                        <input type="hidden" name="sports" value="3">
+                                    </div>
+                                </div>
+                                <div class="skill-row">
+                                    <label>Handling Tools</label>
+                                    <div class="star-rating" data-name="tools">
+                                        <i class="fas fa-star" data-val="1"></i>
+                                        <i class="fas fa-star" data-val="2"></i>
+                                        <i class="fas fa-star" data-val="3"></i>
+                                        <i class="fas fa-star" data-val="4"></i>
+                                        <i class="fas fa-star" data-val="5"></i>
+                                        <input type="hidden" name="tools" value="3">
+                                    </div>
+                                </div>
+                                <div class="skill-row">
+                                    <label>Drawing</label>
+                                    <div class="star-rating" data-name="drawing">
+                                        <i class="fas fa-star" data-val="1"></i>
+                                        <i class="fas fa-star" data-val="2"></i>
+                                        <i class="fas fa-star" data-val="3"></i>
+                                        <i class="fas fa-star" data-val="4"></i>
+                                        <i class="fas fa-star" data-val="5"></i>
+                                        <input type="hidden" name="drawing" value="3">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="skill-group">
+                                <h4><i class="fas fa-heart"></i> Affective</h4>
+                                <div class="skill-row">
+                                    <label>Punctuality</label>
+                                    <div class="star-rating" data-name="punctuality">
+                                        <i class="fas fa-star" data-val="1"></i>
+                                        <i class="fas fa-star" data-val="2"></i>
+                                        <i class="fas fa-star" data-val="3"></i>
+                                        <i class="fas fa-star" data-val="4"></i>
+                                        <i class="fas fa-star" data-val="5"></i>
+                                        <input type="hidden" name="punctuality" value="3">
+                                    </div>
+                                </div>
+                                <div class="skill-row">
+                                    <label>Neatness</label>
+                                    <div class="star-rating" data-name="neatness">
+                                        <i class="fas fa-star" data-val="1"></i>
+                                        <i class="fas fa-star" data-val="2"></i>
+                                        <i class="fas fa-star" data-val="3"></i>
+                                        <i class="fas fa-star" data-val="4"></i>
+                                        <i class="fas fa-star" data-val="5"></i>
+                                        <input type="hidden" name="neatness" value="3">
+                                    </div>
+                                </div>
+                                <div class="skill-row">
+                                    <label>Politeness</label>
+                                    <div class="star-rating" data-name="politeness">
+                                        <i class="fas fa-star" data-val="1"></i>
+                                        <i class="fas fa-star" data-val="2"></i>
+                                        <i class="fas fa-star" data-val="3"></i>
+                                        <i class="fas fa-star" data-val="4"></i>
+                                        <i class="fas fa-star" data-val="5"></i>
+                                        <input type="hidden" name="politeness" value="3">
+                                    </div>
+                                </div>
+                                <div class="skill-row">
+                                    <label>Attentiveness</label>
+                                    <div class="star-rating" data-name="attentiveness">
+                                        <i class="fas fa-star" data-val="1"></i>
+                                        <i class="fas fa-star" data-val="2"></i>
+                                        <i class="fas fa-star" data-val="3"></i>
+                                        <i class="fas fa-star" data-val="4"></i>
+                                        <i class="fas fa-star" data-val="5"></i>
+                                        <input type="hidden" name="attentiveness" value="3">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Tab: Remarks -->
+                <div id="tab-remarks" class="tab-pane">
+                    <div class="remark-card">
+                        <label>Class Teacher's Verdict</label>
+                        <div class="quick-chips" id="teacher-chips">
+                            <span class="chip" data-for="teacher"
+                                data-text="An excellent result. Keep it up.">Excellent</span>
+                            <span class="chip" data-for="teacher"
+                                data-text="Good performance, can do better.">Good</span>
+                            <span class="chip" data-for="teacher"
+                                data-text="More focus required next term.">Focus</span>
+                        </div>
+                        <select id="teacher-remark" class="nano-input">
+                            <option value="">-- Select Template --</option>
+                            <option>An excellent result. Keep it up.</option>
+                            <option>A good performance but needs to work harder.</option>
+                            <option>Average performance. More effort required.</option>
+                            <option>Below average performance.</option>
+                        </select>
+                        <textarea id="teacher-remark-text" class="nano-textarea" rows="2"
+                            placeholder="Write custom remark..."></textarea>
+                    </div>
+
+                    <div class="remark-card" style="margin-top: 20px;">
+                        <label>Principal's Decision</label>
+                        <div class="quick-chips" id="principal-chips">
+                            <span class="chip" data-for="principal" data-text="Promoted to next class.">Promoted</span>
+                            <span class="chip" data-for="principal" data-text="Promoted on trial.">Trial</span>
+                            <span class="chip" data-for="principal" data-text="To repeat class.">Repeat</span>
+                        </div>
+                        <select id="principal-remark" class="nano-input">
+                            <option value="">-- Select Template --</option>
+                            <option>Promoted to next class.</option>
+                            <option>Promoted on trial.</option>
+                            <option>To repeat class.</option>
+                            <option>Outstanding performance.</option>
+                        </select>
+                        <textarea id="principal-remark-text" class="nano-textarea" rows="2"
+                            placeholder="Write custom remark..."></textarea>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root {
+        --banana-yellow: #FFD600;
+        --banana-dark: #212121;
+        --banana-light: #FFF9C4;
+        --glass-bg: rgba(255, 255, 255, 0.95);
+        --glass-border: 1px solid rgba(0, 0, 0, 0.05);
+        --rc-primary: #1a3366;
+        --rc-accent: #8b1a1a;
+        --rc-light-bg: #f5f5f0;
+    }
+
+    /* Layout */
+    .nano-layout {
+        height: calc(100vh - 80px);
+        display: flex;
+        flex-direction: column;
+        background: #f4f4f5;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .nano-glass-header {
+        background: var(--glass-bg);
+        padding: 15px 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: var(--glass-border);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    }
+
+    .brand {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--banana-dark);
+    }
+
+    .brand .highlight {
+        color: #FBC02D;
+    }
+
+    .nano-select {
+        border: 1px solid #e0e0e0;
+        padding: 8px 15px;
+        border-radius: 20px;
+        background: #fff;
+        font-weight: 500;
+        cursor: pointer;
+        padding-right: 30px;
+        outline: none;
+    }
+
+    .nano-workspace {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        padding: 20px;
+        gap: 20px;
+        overflow: hidden;
+    }
+
+    /* Sidebar */
+    .nano-sidebar {
+        background: #fff;
+        border-radius: 16px;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+    }
+
+    .sidebar-top {
+        padding: 20px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .sidebar-top h3 {
+        margin: 0 0 15px 0;
+        font-size: 16px;
+    }
+
+    .nano-search {
+        background: #f5f5f5;
+        padding: 10px 15px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #666;
+    }
+
+    .nano-search input {
+        border: none;
+        background: transparent;
+        width: 100%;
+        outline: none;
+    }
+
+    .roster-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px;
+    }
+
+    .student-card {
+        padding: 12px 15px;
+        margin-bottom: 8px;
+        border-radius: 10px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition: all 0.2s;
+    }
+
+    .student-card:hover {
+        background: #f9f9f9;
+    }
+
+    .student-card.active {
+        background: var(--banana-yellow);
+        color: #000;
+        font-weight: 600;
+        box-shadow: 0 4px 10px rgba(255, 214, 0, 0.3);
+    }
+
+    .student-card.active .s-avatar {
+        background: #000;
+        color: #fff;
+    }
+
+    .s-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #eee;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 700;
+        color: #666;
+    }
+
+    /* Editor */
+    .nano-editor {
+        background: #e8e8e8;
+        border-radius: 16px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .editor-placeholder {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #999;
+        background: #fff;
+        border-radius: 16px;
+    }
+
+    .placeholder-icon {
+        font-size: 60px;
+        margin-bottom: 20px;
+        color: #eee;
+    }
+
+    #editor-content {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Action Bar (replaces profile-header) */
+    .report-action-bar {
+        background: #fff;
+        padding: 0 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid #eee;
+        flex-shrink: 0;
+    }
+
+    .report-action-bar .action-box {
+        margin-left: auto;
+    }
+
+    .nano-btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 30px;
+        cursor: pointer;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: transform 0.1s;
+    }
+
+    .nano-btn:active {
+        transform: scale(0.96);
+    }
+
+    .btn-primary {
+        background: var(--banana-yellow);
+        color: #000;
+        box-shadow: 0 4px 12px rgba(255, 214, 0, 0.4);
+    }
+
+    /* Tabs */
+    .nano-tabs {
+        display: flex;
+    }
+
+    .tab-btn {
+        background: none;
+        border: none;
+        padding: 15px 20px;
+        font-weight: 600;
+        color: #999;
+        cursor: pointer;
+        position: relative;
+        font-family: inherit;
+        font-size: 13px;
+    }
+
+    .tab-btn i {
+        margin-right: 6px;
+    }
+
+    .tab-btn.active {
+        color: #000;
+    }
+
+    .tab-btn.active::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--banana-yellow);
+        border-radius: 3px 3px 0 0;
+    }
+
+    /* Tab Content */
+    .tab-pane {
+        display: none;
+        overflow-y: auto;
+        flex: 1;
+    }
+
+    .tab-pane.active {
+        display: block;
+        animation: fadeIn 0.3s;
+    }
+
+    #tab-skills,
+    #tab-remarks {
+        padding: 25px;
+        background: #fff;
+    }
+
+    /* =========================================
+       REPORT CARD STYLES
+       ========================================= */
+    .report-card {
+        max-width: 800px;
+        margin: 20px auto;
+        background: #fff;
+        border: 2px solid #333;
+        padding: 25px;
+        font-family: 'Times New Roman', Times, serif;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    }
+
+    /* School Header */
+    .rc-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 15px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid var(--rc-primary);
+    }
+
+    .rc-logo {
+        flex-shrink: 0;
+    }
+
+    .rc-logo-circle {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        background: var(--rc-primary);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+    }
+
+    .rc-school-info {
+        flex: 1;
+        text-align: center;
+    }
+
+    .rc-school-info h1 {
+        margin: 0;
+        font-size: 22px;
+        color: var(--rc-primary);
+        font-weight: 700;
+        font-family: 'Georgia', 'Times New Roman', serif;
+        letter-spacing: 1px;
+    }
+
+    .rc-school-info p {
+        margin: 3px 0 0 0;
+        font-size: 11px;
+        color: #555;
+    }
+
+    .rc-website {
+        font-style: italic;
+        color: #888 !important;
+    }
+
+    .rc-passport {
+        flex-shrink: 0;
+    }
+
+    .rc-passport-box {
+        width: 70px;
+        height: 80px;
+        border: 2px solid #999;
+        border-radius: 4px;
+        background: #f9f9f9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        font-weight: 800;
+        color: #999;
+    }
+
+    /* Student Info Grid */
+    .rc-info-grid {
+        border: 1px solid #333;
+        margin-bottom: 12px;
+    }
+
+    .rc-info-row {
+        display: flex;
+        border-bottom: 1px solid #ccc;
+    }
+
+    .rc-info-row:last-child {
+        border-bottom: none;
+    }
+
+    .rc-info-cell {
+        flex: 1;
+        padding: 6px 10px;
+        border-right: 1px solid #ccc;
+        background: var(--rc-light-bg);
+        font-size: 12px;
+    }
+
+    .rc-info-cell:last-child {
+        border-right: none;
+    }
+
+    .rc-info-cell.rc-info-wide {
+        flex: 2;
+    }
+
+    .rc-label {
+        font-weight: 700;
+        color: #333;
+        margin-right: 5px;
+    }
+
+    .rc-value {
+        color: #000;
+    }
+
+    /* Title Bar */
+    .rc-title-bar {
+        background: var(--rc-accent);
+        color: #fff;
+        text-align: center;
+        padding: 6px;
+        font-weight: 700;
+        font-size: 13px;
+        letter-spacing: 2px;
+        margin-bottom: 0;
+    }
+
+    /* Academic Table */
+    .rc-academic-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
+
+    .rc-academic-table thead {
+        background: var(--rc-primary);
+        color: #fff;
+    }
+
+    .rc-academic-table th {
+        padding: 7px 8px;
+        text-align: left;
+        font-weight: 600;
+        font-size: 11px;
+        border: 1px solid #333;
+    }
+
+    .rc-th-score,
+    .rc-th-grade {
+        text-align: center !important;
+        width: 60px;
+    }
+
+    .rc-th-subject {
+        width: 170px;
+    }
+
+    .rc-academic-table td {
+        padding: 5px 8px;
+        border: 1px solid #ccc;
+        font-size: 11px;
+    }
+
+    .rc-academic-table tbody tr:nth-child(even) {
+        background: #f8f8f8;
+    }
+
+    .rc-academic-table tbody tr:hover {
+        background: #eef3ff;
+    }
+
+    .rc-score-cell,
+    .rc-grade-cell {
+        text-align: center;
+        font-weight: 600;
+    }
+
+    .rc-grade-cell {
+        color: var(--rc-accent);
+    }
+
+    .rc-comment-cell {
+        font-style: italic;
+        color: #555;
+        font-size: 10px;
+    }
+
+    /* Grade Key */
+    .rc-grade-key {
+        margin-top: 5px;
+        margin-bottom: 12px;
+    }
+
+    .rc-grade-key table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 9px;
+    }
+
+    .rc-grade-key td {
+        border: 1px solid #bbb;
+        padding: 3px 6px;
+        text-align: center;
+    }
+
+    .rc-gk-label {
+        background: #ddd;
+        font-weight: 700;
+    }
+
+    /* Bottom Section */
+    .rc-bottom-section {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 12px;
+    }
+
+    .rc-attendance,
+    .rc-psychomotor {
+        flex: 1;
+    }
+
+    .rc-section-title {
+        background: var(--rc-primary);
+        color: #fff;
+        padding: 5px 10px;
+        font-size: 11px;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 0;
+    }
+
+    .rc-att-table,
+    .rc-psych-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 11px;
+    }
+
+    .rc-att-table td,
+    .rc-psych-table td,
+    .rc-psych-table th {
+        border: 1px solid #ccc;
+        padding: 4px 8px;
+    }
+
+    .rc-att-label {
+        font-weight: 600;
+        background: #fafafa;
+    }
+
+    .rc-att-value {
+        text-align: center;
+    }
+
+    .rc-psych-table thead {
+        background: #eee;
+    }
+
+    .rc-psych-table th {
+        font-size: 10px;
+        font-weight: 600;
+        text-align: center;
+    }
+
+    .rc-psych-table td {
+        font-size: 10px;
+    }
+
+    /* Remarks */
+    .rc-remark-section {
+        border: 1px solid #ccc;
+        padding: 8px 12px;
+        margin-bottom: 8px;
+        background: #fefefe;
+        font-size: 11px;
+    }
+
+    .rc-remark-label {
+        font-weight: 700;
+        color: #333;
+    }
+
+    .rc-remark-text {
+        color: #444;
+        font-style: italic;
+    }
+
+    /* Signature */
+    .rc-signature-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-top: 20px;
+        padding-top: 10px;
+    }
+
+    .rc-sig-line {
+        text-align: center;
+        font-size: 10px;
+        color: #555;
+    }
+
+    .rc-sig-placeholder {
+        width: 120px;
+        border-bottom: 1px solid #333;
+        height: 30px;
+        margin-bottom: 3px;
+    }
+
+    .rc-stamp-box {
+        width: 90px;
+        height: 60px;
+        border: 2px dashed #bbb;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 9px;
+        color: #bbb;
+    }
+
+    /* =========================================
+       SKILLS & REMARKS TAB STYLES (unchanged)
+       ========================================= */
+
+    /* Skills */
+    .skills-split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 40px;
+    }
+
+    .skill-group h4 {
+        margin: 0 0 20px 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #444;
+        font-size: 16px;
+    }
+
+    .skill-row {
+        margin-bottom: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .skill-row label {
+        margin-bottom: 0;
+        font-size: 14px;
+        color: #666;
+        font-weight: 500;
+    }
+
+    .star-rating i {
+        font-size: 20px;
+        color: #eee;
+        cursor: pointer;
+        margin-left: 5px;
+        transition: color 0.1s;
+    }
+
+    .star-rating i:hover,
+    .star-rating i.hovered,
+    .star-rating i.active {
+        color: #FFD600;
+    }
+
+    /* Remarks */
+    .remark-card {
+        background: #fafafa;
+        padding: 20px;
+        border-radius: 12px;
+        border: 1px solid #f0f0f0;
+    }
+
+    .remark-card label {
+        display: block;
+        margin-bottom: 10px;
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .quick-chips {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+    }
+
+    .chip {
+        padding: 5px 12px;
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 20px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .chip:hover {
+        border-color: #999;
+        transform: translateY(-1px);
+    }
+
+    .nano-input,
+    .nano-textarea {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background: #fff;
+        outline: none;
+        font-family: inherit;
+        font-size: 14px;
+        transition: border 0.2s;
+    }
+
+    .nano-input:focus,
+    .nano-textarea:focus {
+        border-color: var(--banana-yellow);
+    }
+
+    .nano-textarea {
+        margin-top: 10px;
+        height: 70px;
+        resize: none;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(5px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/reports.js') }}"></script>
+{% endblock %}

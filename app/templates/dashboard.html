@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-header">
+    <div>
+        <h1 class="page-title">Dashboard</h1>
+        <p class="page-subtitle">Welcome back — here's your school at a glance</p>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon icon-green">
+            <span class="material-symbols-outlined">groups</span>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value">{{ total_students }}</div>
+            <div class="stat-label">Active Students</div>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon icon-blue">
+            <span class="material-symbols-outlined">calendar_month</span>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value">{{ session_name }}</div>
+            <div class="stat-label">Current Session</div>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon icon-orange">
+            <span class="material-symbols-outlined">schedule</span>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value">{{ term_name }}</div>
+            <div class="stat-label">Current Term</div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions + Status -->
+<div class="grid-layout">
+    <!-- Quick Actions -->
+    <div class="section-container">
+        <h2 class="section-title">Quick Actions</h2>
+        <div class="actions-grid">
+            <a href="{{ url_for('students.index') }}" class="action-card">
+                <div class="action-icon action-green">
+                    <span class="material-symbols-outlined">person_add</span>
+                </div>
+                <h3>Manage Students</h3>
+                <p>Add or edit student records</p>
+            </a>
+
+            <a href="{{ url_for('scores.index') }}" class="action-card">
+                <div class="action-icon action-blue">
+                    <span class="material-symbols-outlined">edit_note</span>
+                </div>
+                <h3>Enter Scores</h3>
+                <p>Record assessment scores</p>
+            </a>
+
+            <a href="{{ url_for('reports.index') }}" class="action-card">
+                <div class="action-icon action-orange">
+                    <span class="material-symbols-outlined">summarize</span>
+                </div>
+                <h3>Generate Reports</h3>
+                <p>Create student report cards</p>
+            </a>
+
+            <a href="{{ url_for('sessions.index') }}" class="action-card">
+                <div class="action-icon action-purple">
+                    <span class="material-symbols-outlined">date_range</span>
+                </div>
+                <h3>Sessions</h3>
+                <p>Manage academic sessions</p>
+            </a>
+        </div>
+    </div>
+
+    <!-- System Status -->
+    <div class="section-container">
+        <h2 class="section-title">System Status</h2>
+        <div class="status-card">
+            <div class="status-item">
+                <div class="status-dot dot-green"></div>
+                <span class="status-text">Database Connected</span>
+            </div>
+            <div class="status-item">
+                <div class="status-dot {% if session_name != 'Not Set' %}dot-green{% else %}dot-orange{% endif %}">
+                </div>
+                <span class="status-text">Session: {{ session_name }}</span>
+            </div>
+            <div class="status-item">
+                <div class="status-dot {% if term_name != 'Not Set' %}dot-green{% else %}dot-orange{% endif %}"></div>
+                <span class="status-text">Term: {{ term_name }}</span>
+            </div>
+            <div class="status-item">
+                <div class="status-dot dot-green"></div>
+                <span class="status-text">{{ total_students }} students enrolled</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
