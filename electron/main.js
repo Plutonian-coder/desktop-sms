@@ -1,12 +1,13 @@
 const { app, BrowserWindow, Menu } = require('electron');
 const path = require('path');
 const http = require('http');
+const https = require('https');
 const { spawn } = require('child_process');
 
 // Configuration
-const FLASK_URL = 'http://127.0.0.1:5000';
-const RETRY_INTERVAL = 500; // ms between connection checks
-const MAX_RETRIES = 60;     // max ~30 seconds of waiting
+const FLASK_URL = 'https://desktop-sms.onrender.com';
+const RETRY_INTERVAL = 2000; // 2 seconds between checks (better for cloud)
+const MAX_RETRIES = 60;      // max 2 minutes of waiting for Render spin-up
 
 let mainWindow = null;
 let backendProcess = null;
@@ -15,27 +16,9 @@ let backendProcess = null;
 const isDev = !app.isPackaged;
 
 function startBackend() {
-    if (isDev) {
-        console.log('Development mode: Please start Flask manually with "python run.py"');
-        return;
-    }
-
-    // Production mode: spawn the bundled backend executable
-    const backendPath = path.join(process.resourcesPath, 'yabatech_backend.exe');
-    console.log('Starting backend from:', backendPath);
-
-    backendProcess = spawn(backendPath, [], {
-        cwd: path.dirname(backendPath),
-        stdio: 'inherit'
-    });
-
-    backendProcess.on('error', (err) => {
-        console.error('Failed to start backend:', err);
-    });
-
-    backendProcess.on('exit', (code) => {
-        console.log(`Backend process exited with code ${code}`);
-    });
+    // We are using a cloud backend on Render, so we don't need to start a local one.
+    console.log('Using cloud backend at:', FLASK_URL);
+    return;
 }
 
 function stopBackend() {
@@ -84,7 +67,9 @@ function createWindow() {
  * then calls the callback.
  */
 function waitForFlask(callback, retries = 0) {
-    const req = http.get(FLASK_URL, (res) => {
+    const client = FLASK_URL.startsWith('https') ? https : http;
+
+    const req = client.get(FLASK_URL, (res) => {
         // Flask is up
         callback();
     });
