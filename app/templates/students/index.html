@@ -60,7 +60,12 @@
             {% if students %}
             {% for student in students %}
             <tr>
-                <td>{{ student.reg_number }}</td>
+                <td>
+                    <span style="font-family:monospace; font-weight:600; background:var(--primary-light,#eef2ff);
+                        color:var(--primary); padding:3px 8px; border-radius:6px; font-size:12px;">
+                        {{ student.reg_number }}
+                    </span>
+                </td>
                 <td style="font-weight: 600;">{{ student.last_name }} {{ student.first_name }}</td>
                 <td><span class="class-badge">{{ student.class_name or 'N/A' }}</span></td>
                 <td>{{ student.gender }}</td>
@@ -105,15 +110,11 @@
                 </h4>
 
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
-                    <div class="form-group">
-                        <label>Registration Number *</label>
-                        <input type="text" name="reg_number" class="form-control" placeholder="e.g. JSS/2025/001"
-                            required>
-                    </div>
 
+                    <!-- Class first — triggers reg number generation -->
                     <div class="form-group">
                         <label>Class *</label>
-                        <select name="class_id" class="form-control" required>
+                        <select id="form-class-id" name="class_id" class="form-control" required>
                             <option value="">Select Class</option>
                             {% for cls in classes %}
                             <option value="{{ cls.id }}">{{ cls.name }}</option>
@@ -121,14 +122,32 @@
                         </select>
                     </div>
 
+                    <!-- Auto-generated registration number -->
+                    <div class="form-group">
+                        <label style="display:flex; align-items:center; gap:6px;">
+                            Registration Number
+                            <span id="reg-badge" style="font-size:10px; padding:2px 7px; background:var(--primary);
+                                color:#fff; border-radius:20px; font-weight:600; display:none;">AUTO</span>
+                        </label>
+                        <div style="position:relative;">
+                            <input type="text" id="reg-number-display" name="reg_number" class="form-control"
+                                placeholder="Select a class first…" readonly style="background:var(--bg-secondary,#f8f9fa); color:var(--text-muted);
+                                       font-family:monospace; font-weight:600; cursor:default;">
+                            <span id="reg-spinner" style="display:none; position:absolute; right:10px; top:50%;
+                                transform:translateY(-50%); font-size:12px; color:var(--primary);">⏳</span>
+                        </div>
+                    </div>
+
                     <div class="form-group">
                         <label>First Name *</label>
-                        <input type="text" name="first_name" class="form-control" placeholder="First name" required>
+                        <input type="text" name="first_name" class="form-control" placeholder="First name"
+                            maxlength="50" required>
                     </div>
 
                     <div class="form-group">
                         <label>Last Name *</label>
-                        <input type="text" name="last_name" class="form-control" placeholder="Last name" required>
+                        <input type="text" name="last_name" class="form-control" placeholder="Last name" maxlength="50"
+                            required>
                     </div>
 
                     <div class="form-group">
@@ -161,7 +180,8 @@
 
                     <div class="form-group">
                         <label>Phone Number</label>
-                        <input type="tel" name="parent_phone" class="form-control" placeholder="08012345678">
+                        <input type="tel" name="parent_phone" class="form-control" placeholder="08012345678"
+                            maxlength="15">
                     </div>
                 </div>
 
@@ -172,7 +192,7 @@
 
                 <div class="modal-footer" style="padding:16px 0 0; border-top:none;">
                     <button type="button" class="btn btn-light close-modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" id="save-student-btn" class="btn btn-primary">
                         <span class="material-symbols-outlined" style="font-size:18px">save</span>
                         Save Student
                     </button>
@@ -184,5 +204,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', filename='js/students.js') }}?v=2"></script>
+<script src="{{ url_for('static', filename='js/students.js') }}?v=3"></script>
 {% endblock %}

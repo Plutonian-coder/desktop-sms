@@ -13,29 +13,11 @@ def validate_student_data(data, student_id=None):
     """Validate student data before saving"""
     errors = []
 
-    # Required fields
-    required_fields = ['reg_number', 'first_name', 'last_name', 'gender', 'dob', 'class_id']
+    # Required fields — reg_number is auto-generated server-side, not required from client
+    required_fields = ['first_name', 'last_name', 'gender', 'dob', 'class_id']
     for field in required_fields:
         if not data.get(field):
             errors.append(f"{field.replace('_', ' ').title()} is required")
-
-    # Registration number uniqueness
-    if data.get('reg_number'):
-        reg_number = data['reg_number'].strip()
-        if student_id:
-            # Check if reg_number exists for other students
-            existing = db.execute_query(
-                'SELECT id FROM students WHERE reg_number = ? AND id != ? AND active_status = 1',
-                (reg_number, student_id)
-            )
-        else:
-            # Check if reg_number exists at all
-            existing = db.execute_query(
-                'SELECT id FROM students WHERE reg_number = ? AND active_status = 1',
-                (reg_number,)
-            )
-        if existing:
-            errors.append(f"Registration number '{reg_number}' is already in use")
 
     # Date format validation
     if data.get('dob'):
@@ -57,6 +39,62 @@ def validate_student_data(data, student_id=None):
 
     return errors
 
+
+def generate_reg_number(class_id):
+    """
+    Generate next sequential registration number.
+    Format: GFA-YY-CLASSNAME-NNN
+    e.g.  : GFA-26-JSS1-001
+    """
+    year_suffix = datetime.now().strftime('%y')  # e.g. '26'
+
+    # Get class name
+    classes = db.execute_query('SELECT * FROM classes WHERE id = ?', (class_id,))
+    if not classes:
+        return None, "Class not found"
+
+    # Sanitise class name: strip spaces, use as-is (e.g. JSS1, SS2)
+    class_name = classes[0]['name'].strip().replace(' ', '')
+
+    prefix = f"GFA-{year_suffix}-{class_name}-"
+
+    # Count how many students already have this prefix
+    count = db.count_students_by_prefix(prefix)
+    next_num = count + 1
+    reg_number = f"{prefix}{str(next_num).zfill(3)}"
+
+    # Safety: keep incrementing if the number is somehow taken
+    attempts = 0
+    while True:
+        existing = db.execute_query(
+            'SELECT id FROM students WHERE reg_number = ? AND active_status = 1',
+            (reg_number,)
+        )
+        if not existing:
+            break
+        next_num += 1
+        reg_number = f"{prefix}{str(next_num).zfill(3)}"
+        attempts += 1
+        if attempts > 500:
+            return None, "Could not generate unique registration number"
+
+    return reg_number, None
+
+
+@bp.route('/generate-reg-number')
+def generate_reg_number_endpoint():
+    """Generate the next registration number for a given class."""
+    class_id = request.args.get('class_id', type=int)
+    if not class_id:
+        return jsonify({'success': False, 'message': 'class_id is required'}), 400
+
+    reg_number, error = generate_reg_number(class_id)
+    if error:
+        return jsonify({'success': False, 'message': error}), 400
+
+    return jsonify({'success': True, 'reg_number': reg_number})
+
+
 @bp.route('/')
 def index():
     """Students list page"""
@@ -70,12 +108,13 @@ def index():
     classes = db.execute_query('SELECT * FROM classes ORDER BY level, stream')
     return render_template('students/index.html', students=students, classes=classes)
 
+
 @bp.route('/add', methods=['POST'])
 def add_student():
-    """Add new student with validation"""
+    """Add new student — reg_number is generated server-side."""
     data = request.json
 
-    # Validate input data
+    # Validate input data (reg_number excluded — auto-generated)
     validation_errors = validate_student_data(data)
     if validation_errors:
         return jsonify({
@@ -84,13 +123,18 @@ def add_student():
             'errors': validation_errors
         }), 400
 
+    # Generate registration number server-side
+    reg_number, error = generate_reg_number(data['class_id'])
+    if error:
+        return jsonify({'success': False, 'message': error}), 400
+
     try:
         # Insert student
         db.execute_update('''
             INSERT INTO students (reg_number, first_name, last_name, gender, dob, class_id,
                                 parent_name, parent_phone, parent_address, date_enrolled, active_status)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, date('now'), 1)
-        ''', (data['reg_number'].strip(), data['first_name'].strip(), data['last_name'].strip(),
+        ''', (reg_number, data['first_name'].strip(), data['last_name'].strip(),
               data['gender'], data['dob'], data['class_id'], data.get('parent_name', '').strip(),
               data.get('parent_phone', '').strip(), data.get('parent_address', '').strip()))
 
@@ -100,7 +144,7 @@ def add_student():
             FROM students s
             LEFT JOIN classes c ON s.class_id = c.id
             WHERE s.reg_number = ? AND s.active_status = 1
-        ''', (data['reg_number'].strip(),))
+        ''', (reg_number,))
 
         if new_student:
             return jsonify({
@@ -117,6 +161,7 @@ def add_student():
             'message': f'Failed to register student: {str(e)}'
         }), 500
 
+
 @bp.route('/<int:student_id>', methods=['GET'])
 def get_student(student_id):
     """Get single student details"""
@@ -129,13 +174,14 @@ def get_student(student_id):
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
+
 @bp.route('/update/<int:student_id>', methods=['POST'])
 def update_student(student_id):
-    """Update student details with validation"""
+    """Update student details — reg_number preserved as-is."""
     data = request.json
 
     # Check if student exists
-    existing = db.execute_query('SELECT id FROM students WHERE id = ? AND active_status = 1', (student_id,))
+    existing = db.execute_query('SELECT id, reg_number FROM students WHERE id = ? AND active_status = 1', (student_id,))
     if not existing:
         return jsonify({
             'success': False,
@@ -151,13 +197,16 @@ def update_student(student_id):
             'errors': validation_errors
         }), 400
 
+    # Keep the original registration number — do not allow change
+    reg_number = existing[0]['reg_number']
+
     try:
         db.execute_update('''
             UPDATE students
             SET reg_number=?, first_name=?, last_name=?, gender=?, dob=?, class_id=?,
                 parent_name=?, parent_phone=?, parent_address=?
             WHERE id=?
-        ''', (data['reg_number'].strip(), data['first_name'].strip(), data['last_name'].strip(),
+        ''', (reg_number, data['first_name'].strip(), data['last_name'].strip(),
               data['gender'], data['dob'], data['class_id'], data.get('parent_name', '').strip(),
               data.get('parent_phone', '').strip(), data.get('parent_address', '').strip(), student_id))
 
@@ -183,6 +232,7 @@ def update_student(student_id):
             'success': False,
             'message': f'Failed to update student: {str(e)}'
         }), 500
+
 
 @bp.route('/delete/<int:student_id>', methods=['POST'])
 def delete_student(student_id):

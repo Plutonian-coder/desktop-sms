@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-header">
+    <div>
+        <h1 class="page-title">Fee Management</h1>
+        <p class="page-subtitle">Calculate student fees and generate receipts</p>
+    </div>
+    <div class="header-actions">
+        <button id="add-receipt-btn" class="btn btn-primary">
+            <span class="material-symbols-outlined" style="font-size:18px">receipt_long</span>
+            New Receipt
+        </button>
+    </div>
+</div>
+
+<!-- Receipt History Table -->
+<div class="table-container">
+    <table class="data-table" id="receipt-table">
+        <thead>
+            <tr>
+                <th>Receipt #</th>
+                <th>Date</th>
+                <th>Student</th>
+                <th>Amount Paid (₦)</th>
+                <th style="text-align:right;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if recent_receipts %}
+            {% for rcpt in recent_receipts %}
+            <tr>
+                <td>
+                    <span style="font-family:monospace; font-weight:600; background:var(--primary-light,#eef2ff);
+                        color:var(--primary); padding:3px 8px; border-radius:6px; font-size:12px;">
+                        {{ rcpt.receipt_number }}
+                    </span>
+                </td>
+                <td>{{ rcpt.payment_date }}</td>
+                <td style="font-weight: 600;">{{ rcpt.last_name }} {{ rcpt.first_name }} ({{ rcpt.reg_number }})</td>
+                <td>₦{{ "{:,.2f}".format(rcpt.amount_paid) }}</td>
+                <td style="text-align:right;">
+                    <a href="{{ url_for('fees.view_receipt', receipt_number=rcpt.receipt_number) }}" target="_blank"
+                        class="btn btn-sm btn-outline" title="Print/View">
+                        <i class="fas fa-print"></i>
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="5" class="no-data">No fee receipts generated yet</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<!-- ═══ ADD RECEIPT MODAL ═══ -->
+<div id="receipt-modal" class="modal-overlay"
+    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div class="modal"
+        style="background:#fff; width:600px; max-height:90vh; overflow-y:auto; border-radius:8px; padding:20px; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
+        <div class="modal-header"
+            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
+            <h3 id="modal-title" style="margin:0;"><i class="fas fa-calculator"></i> Fee Calculator</h3>
+            <button class="modal-close" id="close-receipt-modal"
+                style="background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="add-receipt-form">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:15px;">
+                    <div class="form-group">
+                        <label>Student *</label>
+                        <select id="student-id" name="student_id" class="form-control" required>
+                            <option value="">Select Student</option>
+                            <!-- Dynamically loaded via JS or populated if available -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Class (Filter)</label>
+                        <select id="class-filter" class="form-control">
+                            <option value="">All Classes</option>
+                            {% for cls in classes %}
+                            <option value="{{ cls.id }}">{{ cls.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:15px;">
+                    <div class="form-group">
+                        <label>Session *</label>
+                        <select id="session-id" name="session_id" class="form-control" required>
+                            {% for sess in sessions %}
+                            <option value="{{ sess.id }}" {% if current_session and sess.id==current_session.id
+                                %}selected{% endif %}>{{ sess.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Term *</label>
+                        <select id="term-id" name="term_id" class="form-control" required>
+                            {% if current_term %}
+                            <option value="{{ current_term.id }}" selected>Term {{ current_term.term_number }}</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Line Items -->
+                <h4 style="font-size:14px; font-weight:700; margin:20px 0 10px; color:var(--primary);">Fee Items</h4>
+                <div id="fee-items-container">
+                    <div class="fee-item" style="display:flex; gap:10px; margin-bottom:10px;">
+                        <input type="text" class="form-control item-desc" placeholder="Description (e.g. Tuition)"
+                            required>
+                        <input type="number" class="form-control item-amt" placeholder="Amount (₦)" min="0" step="0.01"
+                            style="width:120px;" required>
+                        <button type="button" class="btn btn-danger remove-item-btn"
+                            style="padding:4px 8px;">&times;</button>
+                    </div>
+                </div>
+                <button type="button" id="add-item-btn" class="btn btn-sm btn-outline" style="margin-bottom:15px;">+ Add
+                    Item</button>
+
+                <div
+                    style="background:#f9f9f9; padding:15px; border-radius:6px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
+                    <strong style="font-size:16px;">Total Amount:</strong>
+                    <strong style="font-size:18px; color:var(--primary);">₦<span id="total-amount">0.00</span></strong>
+                </div>
+
+                <div class="modal-footer"
+                    style="padding:16px 0 0; border-top:1px solid #eee; display:flex; justify-content:flex-end; gap:10px;">
+                    <button type="button" class="btn btn-light" id="cancel-receipt-modal">Cancel</button>
+                    <button type="submit" id="save-receipt-btn" class="btn btn-primary">
+                        <i class="fas fa-print"></i> Generate & Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const modal = document.getElementById('receipt-modal');
+        const openBtn = document.getElementById('add-receipt-btn');
+        const closeBtns = [document.getElementById('close-receipt-modal'), document.getElementById('cancel-receipt-modal')];
+        const addItemBtn = document.getElementById('add-item-btn');
+        const itemsContainer = document.getElementById('fee-items-container');
+        const totalSpan = document.getElementById('total-amount');
+        const form = document.getElementById('add-receipt-form');
+        const classFilter = document.getElementById('class-filter');
+        const studentSelect = document.getElementById('student-id');
+
+        // Modal toggle
+        openBtn.addEventListener('click', () => { modal.style.display = 'flex'; loadStudents(); });
+        closeBtns.forEach(b => b.addEventListener('click', () => modal.style.display = 'none'));
+
+        // Load students
+        async function loadStudents(classId = '') {
+            try {
+                // Fetch students from the API - assuming we need a specific endpoint or we can get all if available
+                const rs = await fetch('/api/stats');
+                const stats = await rs.json();
+
+                // Fetching proper student list
+                // we'll make a generic fetch to a dashboard or a dedicated list endpoint if possible
+                // For simplicity, assuming the app has /students/ endpoint returning JSON if requested, or we can fetch a specific class
+                // Actually the student data might not be readily available via JSON without an ID. We can simulate or wait if they type.
+                // Let's create an endpoint in main or just use the available API
+                const resp = await fetch(`/api/students/active`);
+                if (resp.ok) {
+                    const st = await resp.json();
+                    studentSelect.innerHTML = '<option value="">Select Student</option>';
+                    st.forEach(s => {
+                        if (!classId || s.class_id == classId) {
+                            studentSelect.innerHTML += `<option value="${s.id}">${s.last_name} ${s.first_name} (${s.reg_number})</option>`;
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+        classFilter.addEventListener('change', (e) => loadStudents(e.target.value));
+
+        // Let's add an endpoint to main.py /api/students/active via replace if it doesn't exist.
+
+        // Line Items
+        addItemBtn.addEventListener('click', () => {
+            const div = document.createElement('div');
+            div.className = 'fee-item';
+            div.style.cssText = 'display:flex; gap:10px; margin-bottom:10px;';
+            div.innerHTML = `
+                <input type="text" class="form-control item-desc" placeholder="Description" required>
+                <input type="number" class="form-control item-amt" placeholder="Amount (₦)" min="0" step="0.01" style="width:120px;" required>
+                <button type="button" class="btn btn-danger remove-item-btn" style="padding:4px 8px;">&times;</button>
+            `;
+            itemsContainer.appendChild(div);
+            attachEvents(div);
+        });
+
+        function attachEvents(parent) {
+            parent.querySelector('.remove-item-btn').addEventListener('click', (e) => {
+                e.target.closest('.fee-item').remove();
+                calcTotal();
+            });
+            parent.querySelector('.item-amt').addEventListener('input', calcTotal);
+        }
+
+        document.querySelectorAll('.fee-item').forEach(attachEvents);
+
+        function calcTotal() {
+            let total = 0;
+            document.querySelectorAll('.item-amt').forEach(inp => {
+                total += parseFloat(inp.value || 0);
+            });
+            totalSpan.textContent = total.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+        }
+
+        // Submit Form
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const items = [];
+            document.querySelectorAll('.fee-item').forEach(it => {
+                items.push({
+                    desc: it.querySelector('.item-desc').value,
+                    amt: parseFloat(it.querySelector('.item-amt').value)
+                });
+            });
+            const total = items.reduce((sum, i) => sum + i.amt, 0);
+
+            const payload = {
+                student_id: studentSelect.value,
+                session_id: document.getElementById('session-id').value,
+                term_id: document.getElementById('term-id').value,
+                amount_paid: total,
+                description: JSON.stringify(items)
+            };
+
+            try {
+                const res = await fetch('/fees/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    window.open(`/fees/receipt/${data.receipt_number}`, '_blank');
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (err) {
+                alert('Request Failed: ' + err);
+            }
+        });
+    });
+</script>
+{% endblock %}

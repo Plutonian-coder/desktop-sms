@@ -145,6 +145,19 @@ CREATE TABLE IF NOT EXISTS term_results (
     UNIQUE(student_id, session_id, term_id)
 );
 
+-- Fee Receipts table
+CREATE TABLE IF NOT EXISTS fee_receipts (
+    id SERIAL PRIMARY KEY,
+    student_id INTEGER NOT NULL REFERENCES students(id),
+    session_id INTEGER NOT NULL REFERENCES sessions(id),
+    term_id INTEGER NOT NULL REFERENCES terms(id),
+    receipt_number TEXT NOT NULL UNIQUE,
+    amount_paid NUMERIC NOT NULL,
+    description TEXT,
+    payment_date DATE DEFAULT CURRENT_DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Default Data
 INSERT INTO settings (school_name, address) VALUES ('Yabatech Secondary School', 'Yaba, Lagos, Nigeria') ON CONFLICT DO NOTHING;
 INSERT INTO classes (name, level, stream) VALUES 

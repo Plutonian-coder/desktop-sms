@@ -19,7 +19,7 @@ def create_app():
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)  # Session lasts 7 days
     
     # Register blueprints
-    from app.routes import main, students, sessions, subjects, scores, attendance, reports, auth
+    from app.routes import main, students, sessions, subjects, scores, attendance, reports, auth, fees
     
     app.register_blueprint(auth.bp)  # Register auth first
     app.register_blueprint(main.bp)
@@ -29,6 +29,7 @@ def create_app():
     app.register_blueprint(scores.bp)
     app.register_blueprint(attendance.bp)
     app.register_blueprint(reports.bp)
+    app.register_blueprint(fees.bp)
     
     # Authentication middleware
     @app.before_request

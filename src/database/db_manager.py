@@ -98,6 +98,10 @@ class DatabaseManager:
                 res = self.supabase.table('students').select('*', count='exact').eq('active_status', 1).execute()
             return [{'count': res.count, 'cnt': res.count}]
 
+        if "from students where reg_number = ?" in q:
+            res = self.supabase.table('students').select('id').eq('reg_number', params[0]).eq('active_status', 1).execute()
+            return res.data
+
         if "from students where id = ?" in q and "count" not in q:
             return self.supabase.table('students').select('*').eq('id', params[0]).execute().data
 
@@ -202,6 +206,25 @@ class DatabaseManager:
         # --- Attendance ---
         if "select * from attendance" in q:
             return self.supabase.table('attendance').select('*').eq('student_id', params[0]).eq('session_id', params[1]).eq('term_id', params[2]).execute().data
+
+        # --- Fee Receipts ---
+        if "from fee_receipts" in q:
+            # Join students to get names + reg_number
+            if "join students" in q:
+                if "where student_id" in q:
+                    res = self.supabase.table('fee_receipts').select('*, students(first_name, last_name, reg_number)').eq('student_id', params[0]).order('created_at', desc=True).execute()
+                else:
+                    res = self.supabase.table('fee_receipts').select('*, students(first_name, last_name, reg_number)').order('created_at', desc=True).execute()
+                data = res.data
+                for item in data:
+                    item['first_name'] = item.get('students', {}).get('first_name', '') if item.get('students') else ''
+                    item['last_name'] = item.get('students', {}).get('last_name', '') if item.get('students') else ''
+                    item['reg_number'] = item.get('students', {}).get('reg_number', '') if item.get('students') else ''
+                return data
+            
+            if "where id = ?" in q:
+                return self.supabase.table('fee_receipts').select('*').eq('id', params[0]).execute().data
+            return self.supabase.table('fee_receipts').select('*').order('created_at', desc=True).execute().data
 
         print(f"Warning: execute_query received untranslated SQL: {query}")
         return []
@@ -343,6 +366,15 @@ class DatabaseManager:
             self.supabase.table('attendance').upsert(data, on_conflict='student_id,session_id,term_id').execute()
             return 1
 
+        # --- Fee Receipts ---
+        if "insert into fee_receipts" in q:
+            data = {
+                'student_id': params[0], 'session_id': params[1], 'term_id': params[2],
+                'receipt_number': params[3], 'amount_paid': params[4], 'description': params[5]
+            }
+            res = self.supabase.table('fee_receipts').insert(data).execute()
+            return res.data[0]['id'] if res.data else 0
+
         print(f"Warning: execute_update received untranslated SQL: {query}")
         return 0
 
@@ -368,6 +400,19 @@ class DatabaseManager:
                     'class_highest_avg': p[7], 'class_lowest_avg': p[8], 'class_average_avg': p[9]
                 })
             self.supabase.table('term_results').insert(batch).execute()
+
+    def count_students_by_prefix(self, prefix: str) -> int:
+        """Count active students whose reg_number starts with the given prefix.
+        Used to generate the next sequential registration number."""
+        try:
+            res = self.supabase.table('students') \
+                .select('id', count='exact') \
+                .like('reg_number', f'{prefix}%') \
+                .eq('active_status', 1) \
+                .execute()
+            return res.count or 0
+        except Exception:
+            return 0
 
     def get_current_session(self) -> Optional[Dict[str, Any]]:
         settings = self.execute_query('SELECT current_session_id FROM settings WHERE id = 1')
