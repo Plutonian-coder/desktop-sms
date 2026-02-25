@@ -45,5 +45,19 @@ def create_app():
         # Check if user is logged in
         if 'user' not in session:
             return redirect(url_for('auth.login'))
-    
+
+    # Global context: inject school settings into every template
+    import sys, os as _os
+    sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), 'src'))
+    from database.db_manager import DatabaseManager as _DBM
+    _db = _DBM()
+
+    @app.context_processor
+    def inject_school_settings():
+        try:
+            rows = _db.execute_query('SELECT * FROM settings WHERE id = 1')
+            return {'school_settings': rows[0] if rows else {}}
+        except Exception:
+            return {'school_settings': {}}
+
     return app

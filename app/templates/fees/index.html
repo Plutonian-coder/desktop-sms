@@ -245,17 +245,16 @@
         </div>
 
         <!-- Current logo preview -->
-        {% if settings and settings.logo_path %}
         <div style="text-align:center;margin-bottom:16px;">
-            <img src="/static/uploads/{{ settings.logo_path }}" alt="Current Logo" id="logo-preview"
+            {% if school_settings and school_settings.logo_path %}
+            <img src="{{ url_for('static', filename='uploads/' + school_settings.logo_path) }}" id="logo-preview"
                 style="max-height:80px;border-radius:8px;object-fit:contain;border:1px solid var(--border);padding:4px;">
+            {% else %}
+            <img src="" id="logo-preview" style="max-height:80px;border-radius:8px;display:none;">
+            <p id="no-logo-msg" style="color:var(--text-muted);font-size:13px;">No logo uploaded yet — choose a file
+                below.</p>
+            {% endif %}
         </div>
-        {% else %}
-        <div id="logo-preview-wrapper" style="text-align:center;margin-bottom:16px;">
-            <img src="" alt="" id="logo-preview" style="max-height:80px;border-radius:8px;display:none;">
-            <p id="no-logo-msg" style="color:var(--text-muted);font-size:13px;">No logo uploaded yet</p>
-        </div>
-        {% endif %}
 
         <form id="logo-upload-form" enctype="multipart/form-data">
             <div class="form-group">
@@ -377,21 +376,31 @@
             calcTotal();
         }
 
-        function initReceiptModal() {
+        async function initReceiptModal() {
+            // Reset items
             itemsCont.innerHTML = '';
             itemsCont.appendChild(makeItem());
             calcTotal();
             tmplNotice.style.display = 'none';
             tmplTotalEl.textContent = '—';
-            loadStudents();
+
+            // Load terms for the current session, then load students
+            recClass.value = '';
+            recStudent.innerHTML = '<option value="">Loading students…</option>';
+            await loadTerms(recSession.value, recTerm);
+            await loadStudents();
         }
 
         recSession.addEventListener('change', async () => {
             await loadTerms(recSession.value, recTerm);
+            await loadStudents();
             loadTemplate();
         });
         recTerm.addEventListener('change', loadTemplate);
-        recClass.addEventListener('change', () => { loadStudents(); loadTemplate(); });
+        recClass.addEventListener('change', async () => {
+            await loadStudents();
+            loadTemplate();
+        });
 
         // Receipt submit
         document.getElementById('add-receipt-form').addEventListener('submit', async e => {

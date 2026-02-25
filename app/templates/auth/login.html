@@ -294,11 +294,15 @@
     <div class="login-container">
         <div class="login-header">
             <div class="logo-container" style="background: transparent; box-shadow: none;">
-                <img src="/static/uploads/gfa_logo.png" alt="Logo"
+                {% if school_settings and school_settings.logo_path %}
+                <img src="{{ url_for('static', filename='uploads/' + school_settings.logo_path) }}" alt="School Logo"
                     style="width: 72px; height: 72px; object-fit: contain;">
+                {% else %}
+                <span class="material-symbols-outlined" style="font-size:52px;color:var(--primary);">school</span>
+                {% endif %}
             </div>
             <h1>Welcome Back</h1>
-            <p>Sign in to Glorious Future Academy Portal</p>
+            <p>Sign in to {{ school_settings.school_name if school_settings else 'School' }} Portal</p>
         </div>
 
         <div class="error-message" id="error-message">
