@@ -209,22 +209,41 @@ class DatabaseManager:
 
         # --- Fee Receipts ---
         if "from fee_receipts" in q:
-            # Join students to get names + reg_number
+            # All queries with student join
             if "join students" in q:
-                if "where student_id" in q:
-                    res = self.supabase.table('fee_receipts').select('*, students(first_name, last_name, reg_number)').eq('student_id', params[0]).order('created_at', desc=True).execute()
+                base_q = self.supabase.table('fee_receipts').select('*, students(first_name, last_name, reg_number, class_id)')
+                if "where fr.receipt_number" in q or "where receipt_number" in q:
+                    res = base_q.eq('receipt_number', params[0]).execute()
+                elif "where fr.student_id" in q or "where student_id" in q:
+                    if len(params) >= 3:
+                        # student + session + term
+                        res = base_q.eq('student_id', params[0]).eq('session_id', params[1]).eq('term_id', params[2]).order('created_at', desc=True).execute()
+                    else:
+                        res = base_q.eq('student_id', params[0]).order('created_at', desc=True).execute()
                 else:
-                    res = self.supabase.table('fee_receipts').select('*, students(first_name, last_name, reg_number)').order('created_at', desc=True).execute()
+                    res = base_q.order('created_at', desc=True).execute()
                 data = res.data
                 for item in data:
-                    item['first_name'] = item.get('students', {}).get('first_name', '') if item.get('students') else ''
-                    item['last_name'] = item.get('students', {}).get('last_name', '') if item.get('students') else ''
-                    item['reg_number'] = item.get('students', {}).get('reg_number', '') if item.get('students') else ''
+                    s = item.get('students') or {}
+                    item['first_name'] = s.get('first_name', '')
+                    item['last_name']  = s.get('last_name', '')
+                    item['reg_number'] = s.get('reg_number', '')
+                    item['class_id']   = s.get('class_id', item.get('class_id'))
                 return data
-            
+
             if "where id = ?" in q:
                 return self.supabase.table('fee_receipts').select('*').eq('id', params[0]).execute().data
             return self.supabase.table('fee_receipts').select('*').order('created_at', desc=True).execute().data
+
+        # --- Fee Templates ---
+        if "from fee_templates" in q:
+            if "where class_id = ? and session_id = ? and term_id = ?" in q:
+                return self.supabase.table('fee_templates').select('*') \
+                    .eq('class_id', params[0]).eq('session_id', params[1]).eq('term_id', params[2]).execute().data
+            if "where session_id = ? and term_id = ?" in q:
+                return self.supabase.table('fee_templates').select('*, classes(name)') \
+                    .eq('session_id', params[0]).eq('term_id', params[1]).execute().data
+            return self.supabase.table('fee_templates').select('*, classes(name)').execute().data
 
         print(f"Warning: execute_query received untranslated SQL: {query}")
         return []
@@ -374,6 +393,25 @@ class DatabaseManager:
             }
             res = self.supabase.table('fee_receipts').insert(data).execute()
             return res.data[0]['id'] if res.data else 0
+
+        # --- Fee Templates (bulk class fee assignment) ---
+        if "insert into fee_templates" in q or "insert or replace into fee_templates" in q:
+            data = {
+                'class_id': params[0], 'session_id': params[1], 'term_id': params[2],
+                'items': params[3], 'total_amount': params[4]
+            }
+            res = self.supabase.table('fee_templates').upsert(data, on_conflict='class_id,session_id,term_id').execute()
+            return res.data[0]['id'] if res.data else 0
+
+        # --- Settings (logo upload) ---
+        if "update settings set logo_path" in q:
+            self.supabase.table('settings').update({'logo_path': params[0]}).eq('id', 1).execute()
+            return 1
+
+        if "update settings set school_name" in q:
+            data = {'school_name': params[0], 'address': params[1]}
+            self.supabase.table('settings').update(data).eq('id', 1).execute()
+            return 1
 
         print(f"Warning: execute_update received untranslated SQL: {query}")
         return 0

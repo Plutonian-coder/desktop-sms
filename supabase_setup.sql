@@ -158,6 +158,18 @@ CREATE TABLE IF NOT EXISTS fee_receipts (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Fee Templates (bulk class-level fee structure set by admin)
+CREATE TABLE IF NOT EXISTS fee_templates (
+    id SERIAL PRIMARY KEY,
+    class_id INTEGER NOT NULL REFERENCES classes(id),
+    session_id INTEGER NOT NULL REFERENCES sessions(id),
+    term_id INTEGER NOT NULL REFERENCES terms(id),
+    items TEXT NOT NULL,          -- JSON array of {desc, amt}
+    total_amount NUMERIC NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(class_id, session_id, term_id)
+);
+
 -- Default Data
 INSERT INTO settings (school_name, address) VALUES ('Yabatech Secondary School', 'Yaba, Lagos, Nigeria') ON CONFLICT DO NOTHING;
 INSERT INTO classes (name, level, stream) VALUES 
