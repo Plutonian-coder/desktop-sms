@@ -380,7 +380,7 @@ class DatabaseManager:
         if "insert into attendance" in q or "insert or replace into attendance" in q:
             data = {
                 'student_id': params[0], 'session_id': params[1], 'term_id': params[2],
-                'days_present': params[3], 'days_absent': params[4]
+                'times_present': params[3], 'times_absent': params[4]
             }
             self.supabase.table('attendance').upsert(data, on_conflict='student_id,session_id,term_id').execute()
             return 1
