@@ -43,7 +43,7 @@
 
         body {
             font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
-            background: linear-gradient(135deg, var(--accent-light) 0%, var(--accent) 100%);
+            background: linear-gradient(145deg, #e8f0eb 0%, #d4e3d9 40%, #ccdbd2 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -51,6 +51,36 @@
             padding: 20px;
             position: relative;
             overflow: hidden;
+        }
+
+        /* School logo background watermark */
+        .bg-logo {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: min(600px, 85vw);
+            height: min(600px, 85vw);
+            object-fit: contain;
+            opacity: 0.10;
+            pointer-events: none;
+            user-select: none;
+            z-index: 0;
+            animation: logo-breathe 8s ease-in-out infinite;
+        }
+
+        @keyframes logo-breathe {
+
+            0%,
+            100% {
+                opacity: 0.08;
+                transform: translate(-50%, -50%) scale(1);
+            }
+
+            50% {
+                opacity: 0.13;
+                transform: translate(-50%, -50%) scale(1.04);
+            }
         }
 
         /* Animated background pattern */
@@ -291,6 +321,9 @@
 </head>
 
 <body>
+    <!-- Background logo watermark -->
+    <img class="bg-logo" src="{{ url_for('static', filename='uploads/gfa_logo.png') }}" alt="" aria-hidden="true">
+
     <div class="login-container">
         <div class="login-header">
             <div class="logo-container" style="background: transparent; box-shadow: none;">
