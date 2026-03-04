@@ -1,5 +1,103 @@
 {% extends "base.html" %}
 
+{% block extra_css %}
+<style>
+    .chart-container {
+        position: relative;
+        width: 100%;
+        max-height: 280px;
+    }
+
+    .chart-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 18px;
+    }
+
+    .chart-header h2 {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+    .chart-legend {
+        display: flex;
+        gap: 16px;
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+
+    .chart-legend .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 4px;
+    }
+
+    .stat-trend {
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: 4px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .stat-trend.up {
+        color: var(--green);
+    }
+
+    .stat-trend.neutral {
+        color: var(--text-muted);
+    }
+
+    .dashboard-charts {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 24px;
+        margin-bottom: 24px;
+    }
+
+    .class-list-compact {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .class-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 14px;
+        background: var(--bg-light);
+        border-radius: var(--radius-sm);
+        transition: all 0.2s ease;
+    }
+
+    .class-row:hover {
+        background: var(--accent-light);
+        transform: translateX(4px);
+    }
+
+    .class-row .class-name {
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--text-dark);
+    }
+
+    .class-row .class-count {
+        background: var(--accent);
+        color: var(--primary);
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 700;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="dashboard-header">
     <div>
@@ -17,6 +115,10 @@
         <div class="stat-content">
             <div class="stat-value">{{ total_students }}</div>
             <div class="stat-label">Active Students</div>
+            <div class="stat-trend neutral">
+                <span class="material-symbols-outlined" style="font-size:14px;">school</span>
+                {{ male_count }}M / {{ female_count }}F
+            </div>
         </div>
     </div>
 
@@ -39,9 +141,57 @@
             <div class="stat-label">Current Term</div>
         </div>
     </div>
+
+    <div class="stat-card">
+        <div class="stat-icon icon-purple">
+            <span class="material-symbols-outlined">menu_book</span>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value">{{ total_subjects }}</div>
+            <div class="stat-label">Subjects</div>
+            <div class="stat-trend neutral">
+                <span class="material-symbols-outlined" style="font-size:14px;">class</span>
+                {{ total_classes }} Classes
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- Quick Actions + Status -->
+<!-- Charts Row -->
+<div class="dashboard-charts">
+    <!-- Bar Chart: Students per Class -->
+    <div class="section-container">
+        <div class="chart-header">
+            <h2>Students per Class</h2>
+        </div>
+        <div class="chart-container">
+            <canvas id="classChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Doughnut Chart: Gender Distribution -->
+    <div class="section-container">
+        <div class="chart-header">
+            <h2>Gender Distribution</h2>
+        </div>
+        <div class="chart-container" style="max-height: 220px; display:flex; justify-content:center;">
+            <canvas id="genderChart"></canvas>
+        </div>
+        <div style="text-align:center; margin-top:12px;">
+            <span style="font-size:13px; color:var(--text-muted);">
+                <span
+                    style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#375E48; margin-right:4px;"></span>
+                Male: {{ male_count }}
+                &nbsp;&nbsp;
+                <span
+                    style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#E67E22; margin-right:4px;"></span>
+                Female: {{ female_count }}
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions + Classes Overview -->
 <div class="grid-layout">
     <!-- Quick Actions -->
     <div class="section-container">
@@ -81,28 +231,128 @@
         </div>
     </div>
 
-    <!-- System Status -->
+    <!-- Class Overview -->
     <div class="section-container">
-        <h2 class="section-title">System Status</h2>
-        <div class="status-card">
-            <div class="status-item">
-                <div class="status-dot dot-green"></div>
-                <span class="status-text">Database Connected</span>
+        <h2 class="section-title">Classes Overview</h2>
+        {% if class_counts %}
+        <div class="class-list-compact">
+            {% for cls in class_counts %}
+            <div class="class-row">
+                <span class="class-name">{{ cls.class_name }}</span>
+                <span class="class-count">{{ cls.count }} students</span>
             </div>
-            <div class="status-item">
-                <div class="status-dot {% if session_name != 'Not Set' %}dot-green{% else %}dot-orange{% endif %}">
-                </div>
-                <span class="status-text">Session: {{ session_name }}</span>
-            </div>
-            <div class="status-item">
-                <div class="status-dot {% if term_name != 'Not Set' %}dot-green{% else %}dot-orange{% endif %}"></div>
-                <span class="status-text">Term: {{ term_name }}</span>
-            </div>
-            <div class="status-item">
-                <div class="status-dot dot-green"></div>
-                <span class="status-text">{{ total_students }} students enrolled</span>
-            </div>
+            {% endfor %}
         </div>
+        {% else %}
+        <div style="text-align:center; padding:24px; color:var(--text-muted);">
+            <span class="material-symbols-outlined"
+                style="font-size:40px; display:block; margin-bottom:8px;">school</span>
+            No classes created yet
+        </div>
+        {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Match Chart.js colors to our design system
+        const primary = '#375E48';
+        const primaryLight = '#4A7A5E';
+        const secondary = '#85A693';
+        const accent = '#E2EBE6';
+        const orange = '#E67E22';
+        const blue = '#3498DB';
+        const purple = '#9B59B6';
+
+        // Determine dark mode
+        const isDark = document.documentElement.classList.contains('dark');
+        const textColor = isDark ? '#C0D0C6' : '#3D5347';
+        const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
+
+        // Class distribution bar chart
+        const classLabels = {{ class_counts | map(attribute = 'class_name') | list | tojson
+    }};
+    const classValues = {{ class_counts | map(attribute = 'count') | list | tojson }};
+
+    const barColors = [primary, blue, orange, purple, secondary, primaryLight];
+
+    new Chart(document.getElementById('classChart'), {
+        type: 'bar',
+        data: {
+            labels: classLabels,
+            datasets: [{
+                label: 'Students',
+                data: classValues,
+                backgroundColor: classLabels.map((_, i) => barColors[i % barColors.length] + 'CC'),
+                borderColor: classLabels.map((_, i) => barColors[i % barColors.length]),
+                borderWidth: 1,
+                borderRadius: 6,
+                barPercentage: 0.65,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: isDark ? '#1A2B23' : '#FFFFFF',
+                    titleColor: isDark ? '#E8F0EB' : '#1A2B23',
+                    bodyColor: textColor,
+                    borderColor: isDark ? '#2A3E32' : '#DDE5DF',
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    padding: 12,
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: textColor, font: { size: 12 }, stepSize: 1 },
+                    grid: { color: gridColor }
+                },
+                x: {
+                    ticks: { color: textColor, font: { size: 12 } },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+
+    // Gender doughnut chart
+    new Chart(document.getElementById('genderChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Male', 'Female'],
+            datasets: [{
+                data: [{{ male_count }}, {{ female_count }}],
+        backgroundColor: [primary + 'DD', orange + 'DD'],
+        borderColor: [primary, orange],
+        borderWidth: 2,
+        hoverOffset: 6,
+    }]
+        },
+        options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        cutout: '65%',
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: isDark ? '#1A2B23' : '#FFFFFF',
+                titleColor: isDark ? '#E8F0EB' : '#1A2B23',
+                bodyColor: textColor,
+                borderColor: isDark ? '#2A3E32' : '#DDE5DF',
+                borderWidth: 1,
+                cornerRadius: 8,
+                padding: 12,
+            }
+        }
+    }
+    });
+});
+</script>
 {% endblock %}

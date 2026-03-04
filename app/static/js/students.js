@@ -1,47 +1,5 @@
 // Student Management JavaScript
-
-// ─── Toast Notification Utility ───────────────────────────────────────────────
-function showToast(title, message, type = 'success') {
-    let container = document.querySelector('.toast-container');
-    if (!container) {
-        container = document.createElement('div');
-        container.className = 'toast-container';
-        document.body.appendChild(container);
-    }
-
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-
-    const iconMap = {
-        success: 'fa-check-circle',
-        error: 'fa-exclamation-circle',
-        warning: 'fa-exclamation-triangle',
-        info: 'fa-info-circle'
-    };
-
-    toast.innerHTML = `
-        <i class="fas ${iconMap[type]} toast-icon"></i>
-        <div class="toast-content">
-            <div class="toast-title">${title}</div>
-            ${message ? `<div class="toast-message">${message}</div>` : ''}
-        </div>
-        <i class="fas fa-times toast-close"></i>
-    `;
-
-    container.appendChild(toast);
-
-    toast.querySelector('.toast-close').onclick = () => {
-        toast.style.animation = 'slideOutRight 0.3s ease';
-        setTimeout(() => toast.remove(), 300);
-    };
-
-    setTimeout(() => {
-        if (toast.parentElement) {
-            toast.style.animation = 'slideOutRight 0.3s ease';
-            setTimeout(() => toast.remove(), 300);
-        }
-    }, 5000);
-}
+// Toast is provided globally by toast.js
 
 function showValidationErrors(errors) {
     if (Array.isArray(errors)) {
@@ -50,6 +8,7 @@ function showValidationErrors(errors) {
         showToast('Validation Error', errors, 'error');
     }
 }
+
 
 // ─── Reg Number Auto-Generation ───────────────────────────────────────────────
 async function fetchAndSetRegNumber(classId) {

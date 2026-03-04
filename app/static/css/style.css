@@ -1,4 +1,4 @@
-/* ═══════════════════════════════════════════════════════════════
+﻿/* ═══════════════════════════════════════════════════════════════
    YabaTech School Management System — Design System v2.0
    Green Primary Theme | Plus Jakarta Sans | Dark Mode Support
    ═══════════════════════════════════════════════════════════════ */
@@ -1995,5 +1995,191 @@ select.form-control {
 
 .flex-1 {
     flex: 1;
-}@ m e d i a   p r i n t   {   *   {   - w e b k i t - p r i n t - c o l o r - a d j u s t :   e x a c t   ! i m p o r t a n t ;   p r i n t - c o l o r - a d j u s t :   e x a c t   ! i m p o r t a n t ;   }   }  
- 
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   TOAST NOTIFICATIONS
+   ════════════════════════════════════════════════════════════ */
+
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 400px;
+    pointer-events: none;
+}
+
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border-radius: var(--radius-sm);
+    background: var(--white);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-dark);
+    pointer-events: all;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: none;
+}
+
+.toast-show {
+    animation: toast-slide-in 0.35s var(--ease) forwards;
+}
+
+.toast-hide {
+    animation: toast-slide-out 0.3s var(--ease) forwards;
+}
+
+@keyframes toast-slide-in {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes toast-slide-out {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}
+
+.toast-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+}
+
+.toast-message {
+    flex: 1;
+    line-height: 1.4;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+.toast-close:hover {
+    background: var(--accent-light);
+    color: var(--text-dark);
+}
+
+.toast-close .material-symbols-outlined {
+    font-size: 18px;
+}
+
+.toast-success {
+    border-left: 4px solid var(--green);
+}
+
+.toast-success .toast-icon {
+    color: var(--green);
+}
+
+.toast-error {
+    border-left: 4px solid var(--red);
+}
+
+.toast-error .toast-icon {
+    color: var(--red);
+}
+
+.toast-warning {
+    border-left: 4px solid var(--orange);
+}
+
+.toast-warning .toast-icon {
+    color: var(--orange);
+}
+
+.toast-info {
+    border-left: 4px solid var(--blue);
+}
+
+.toast-info .toast-icon {
+    color: var(--blue);
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   SKELETON LOADING
+   ════════════════════════════════════════════════════════════ */
+
+.skeleton {
+    background: linear-gradient(90deg, var(--accent-light) 25%, var(--accent) 50%, var(--accent-light) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s infinite;
+    border-radius: var(--radius-xs);
+}
+
+.skeleton-text {
+    height: 14px;
+    margin-bottom: 8px;
+    width: 100%;
+}
+
+.skeleton-text:last-child {
+    width: 60%;
+}
+
+.skeleton-card {
+    height: 90px;
+    border-radius: var(--radius);
+}
+
+.skeleton-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+@keyframes skeleton-shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   PRINT
+   ════════════════════════════════════════════════════════════ */
+
+@media print {
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+}

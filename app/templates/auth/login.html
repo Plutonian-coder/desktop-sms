@@ -59,10 +59,10 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: min(600px, 85vw);
-            height: min(600px, 85vw);
+            width: min(900px, 95vw);
+            height: min(900px, 95vh);
             object-fit: contain;
-            opacity: 0.10;
+            opacity: 0.18;
             pointer-events: none;
             user-select: none;
             z-index: 0;
@@ -73,13 +73,13 @@
 
             0%,
             100% {
-                opacity: 0.08;
+                opacity: 0.15;
                 transform: translate(-50%, -50%) scale(1);
             }
 
             50% {
-                opacity: 0.13;
-                transform: translate(-50%, -50%) scale(1.04);
+                opacity: 0.25;
+                transform: translate(-50%, -50%) scale(1.03);
             }
         }
 
@@ -322,7 +322,7 @@
 
 <body>
     <!-- Background logo watermark -->
-    <img class="bg-logo" src="https://drive.google.com/uc?export=view&id=1M4JxTKtlZRl4eAmqL9_WuFmbw5SrwQWD" alt=""
+    <img class="bg-logo" src="https://lh3.googleusercontent.com/d/1M4JxTKtlZRl4eAmqL9_WuFmbw5SrwQWD" alt=""
         aria-hidden="true">
 
     <div class="login-container">
@@ -330,9 +330,11 @@
             <div class="logo-container" style="background: transparent; box-shadow: none;">
                 {% if school_settings and school_settings.logo_path %}
                 <img src="{{ url_for('static', filename='uploads/' + school_settings.logo_path) }}" alt="School Logo"
-                    style="width: 72px; height: 72px; object-fit: contain;">
+                    style="width: 72px; height: 72px; object-fit: contain;"
+                    onerror="this.onerror=null; this.src='https://lh3.googleusercontent.com/d/1M4JxTKtlZRl4eAmqL9_WuFmbw5SrwQWD';">
                 {% else %}
-                <span class="material-symbols-outlined" style="font-size:52px;color:var(--primary);">school</span>
+                <img src="https://lh3.googleusercontent.com/d/1M4JxTKtlZRl4eAmqL9_WuFmbw5SrwQWD" alt="School Logo"
+                    style="width: 72px; height: 72px; object-fit: contain;">
                 {% endif %}
             </div>
             <h1>Welcome Back</h1>
