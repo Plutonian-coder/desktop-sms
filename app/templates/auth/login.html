@@ -322,7 +322,12 @@
 
 <body>
     <!-- Background logo watermark -->
+    {% if school_settings and school_settings.logo_path %}
+    <img class="bg-logo" src="{{ url_for('static', filename='uploads/' + school_settings.logo_path) }}" alt=""
+        aria-hidden="true" onerror="this.onerror=null; this.src='/static/img/school_logo.png';">
+    {% else %}
     <img class="bg-logo" src="/static/img/school_logo.png" alt="" aria-hidden="true">
+    {% endif %}
 
     <div class="login-container">
         <div class="login-header">
