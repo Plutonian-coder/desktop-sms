@@ -4,16 +4,16 @@ const http = require('http');
 const https = require('https');
 const { spawn } = require('child_process');
 
+// Determine if running in production (packaged) or development
+const isDev = !app.isPackaged;
+
 // Configuration
-const FLASK_URL = 'https://desktop-sms.onrender.com';
+const FLASK_URL = isDev ? 'http://127.0.0.1:5000' : 'https://desktop-sms.onrender.com';
 const RETRY_INTERVAL = 2000; // 2 seconds between checks (better for cloud)
 const MAX_RETRIES = 60;      // max 2 minutes of waiting for Render spin-up
 
 let mainWindow = null;
 let backendProcess = null;
-
-// Determine if running in production (packaged) or development
-const isDev = !app.isPackaged;
 
 function startBackend() {
     // We are using a cloud backend on Render, so we don't need to start a local one.
