@@ -322,8 +322,7 @@
 
 <body>
     <!-- Background logo watermark -->
-    <img class="bg-logo" src="https://lh3.googleusercontent.com/d/1M4JxTKtlZRl4eAmqL9_WuFmbw5SrwQWD" alt=""
-        aria-hidden="true">
+    <img class="bg-logo" src="/static/img/school_logo.png" alt="" aria-hidden="true">
 
     <div class="login-container">
         <div class="login-header">
@@ -331,9 +330,9 @@
                 {% if school_settings and school_settings.logo_path %}
                 <img src="{{ url_for('static', filename='uploads/' + school_settings.logo_path) }}" alt="School Logo"
                     style="width: 72px; height: 72px; object-fit: contain;"
-                    onerror="this.onerror=null; this.src='https://lh3.googleusercontent.com/d/1M4JxTKtlZRl4eAmqL9_WuFmbw5SrwQWD';">
+                    onerror="this.onerror=null; this.src='/static/img/school_logo.png';">
                 {% else %}
-                <img src="https://lh3.googleusercontent.com/d/1M4JxTKtlZRl4eAmqL9_WuFmbw5SrwQWD" alt="School Logo"
+                <img src="/static/img/school_logo.png" alt="School Logo"
                     style="width: 72px; height: 72px; object-fit: contain;">
                 {% endif %}
             </div>

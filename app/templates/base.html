@@ -30,9 +30,9 @@
             {% if school_settings and school_settings.logo_path %}
             <img src="{{ url_for('static', filename='uploads/' + school_settings.logo_path) }}" alt="School Logo"
                 style="width:44px;height:44px;object-fit:contain;border-radius:8px;flex-shrink:0;"
-                onerror="this.onerror=null; this.src='https://lh3.googleusercontent.com/d/1M4JxTKtlZRl4eAmqL9_WuFmbw5SrwQWD';">
+                onerror="this.onerror=null; this.src='/static/img/school_logo.png';">
             {% else %}
-            <img src="https://lh3.googleusercontent.com/d/1M4JxTKtlZRl4eAmqL9_WuFmbw5SrwQWD" alt="School Logo"
+            <img src="{{ url_for('static', filename='img/school_logo.png') }}" alt="School Logo"
                 style="width:44px;height:44px;object-fit:contain;border-radius:8px;flex-shrink:0;">
             {% endif %}
             <div>
