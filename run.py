@@ -1,13 +1,23 @@
 """
 Flask Application Entry Point
 """
-from app import create_app
-from dotenv import load_dotenv
+import sys
+import os
 
-load_dotenv()
+# PyInstaller frozen-app support: set working directory to the exe's folder
+# so that templates, static files, and data/ resolve correctly.
+if getattr(sys, 'frozen', False):
+    os.chdir(os.path.dirname(sys.executable))
+
+from app import create_app
 
 app = create_app()
 
 if __name__ == '__main__':
-    # usage_reloader=False prevents "WinError 10054" with Supabase on Windows
-    app.run(debug=True, host='127.0.0.1', port=5000, use_reloader=False)
+    is_frozen = getattr(sys, 'frozen', False)
+    app.run(
+        debug=not is_frozen,
+        host='127.0.0.1',
+        port=5000,
+        use_reloader=False,
+    )

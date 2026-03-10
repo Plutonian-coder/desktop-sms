@@ -57,13 +57,16 @@ def api_students():
     """Return active students as JSON, optionally filtered by class_id"""
     class_id = request.args.get('class_id', '').strip()
     try:
-        q = db.supabase.table('students') \
-            .select('id, first_name, last_name, reg_number, class_id') \
-            .eq('active_status', 1) \
-            .order('last_name')
         if class_id:
-            q = q.eq('class_id', int(class_id))
-        return jsonify(q.execute().data)
+            students = db.execute_query(
+                'SELECT id, first_name, last_name, reg_number, class_id FROM students WHERE active_status = 1 AND class_id = ? ORDER BY last_name',
+                (int(class_id),)
+            )
+        else:
+            students = db.execute_query(
+                'SELECT id, first_name, last_name, reg_number, class_id FROM students WHERE active_status = 1 ORDER BY last_name'
+            )
+        return jsonify(students)
     except Exception as e:
         return jsonify([]), 500
 

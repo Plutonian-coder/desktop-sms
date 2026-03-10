@@ -234,7 +234,7 @@ def generate_single_report():
 
 @bp.route('/api/upload_photo', methods=['POST'])
 def upload_photo():
-    """Upload student photo to Supabase Storage"""
+    """Upload student photo to local storage"""
     try:
         student_id = request.form.get('student_id')
         if not student_id:
@@ -247,26 +247,32 @@ def upload_photo():
         if photo.filename == '':
             return jsonify({'success': False, 'message': 'No file selected'}), 400
         
-        # Read file content
-        file_content = photo.read()
+        # Save locally
         file_ext = photo.filename.rsplit('.', 1)[1].lower() if '.' in photo.filename else 'jpg'
+        allowed_ext = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
+        if file_ext not in allowed_ext:
+            return jsonify({'success': False, 'message': 'File type not allowed'}), 400
+
+        photos_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'uploads', 'photos')
+        os.makedirs(photos_dir, exist_ok=True)
+
+        filename = f"{student_id}.{file_ext}"
+        filepath = os.path.join(photos_dir, filename)
+        photo.save(filepath)
+
+        # Build local URL
+        photo_url = f"/static/uploads/photos/{filename}"
         
-        # Upload to Supabase Storage
-        file_path = f"{student_id}.{file_ext}"
-        supabase = db.supabase
-        
-        # Upload file (will overwrite if exists)
-        supabase.storage.from_('student-photos').upload(
-            file_path,
-            file_content,
-            {'content-type': photo.content_type, 'upsert': 'true'}
-        )
-        
-        # Get public URL
-        photo_url = supabase.storage.from_('student-photos').get_public_url(file_path)
-        
-        # Update student record
-        db.execute_update('UPDATE students SET photo_url = ? WHERE id = ?', (photo_url, student_id))
+        # Update student record (add photo_url column if missing)
+        try:
+            db.execute_update('UPDATE students SET photo_url = ? WHERE id = ?', (photo_url, student_id))
+        except Exception:
+            # Column might not exist yet — add it
+            try:
+                db.execute_update('ALTER TABLE students ADD COLUMN photo_url TEXT')
+                db.execute_update('UPDATE students SET photo_url = ? WHERE id = ?', (photo_url, student_id))
+            except Exception:
+                pass  # Column already exists or other benign error
         
         return jsonify({'success': True, 'photo_url': photo_url})
     except Exception as e:

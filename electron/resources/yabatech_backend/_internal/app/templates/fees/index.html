@@ -1,0 +1,548 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-header">
+    <div>
+        <h1 class="page-title">Fee Management</h1>
+        <p class="page-subtitle">Set class fees, generate receipts, and track balances</p>
+    </div>
+    <div class="header-actions" style="gap:10px;">
+        <button id="open-bulk-btn" class="btn btn-outline">
+            <span class="material-symbols-outlined" style="font-size:18px">groups</span> Bulk Class Fees
+        </button>
+        <button id="open-logo-btn" class="btn btn-outline">
+            <span class="material-symbols-outlined" style="font-size:18px">image</span> Upload Logo
+        </button>
+        <button id="add-receipt-btn" class="btn btn-primary">
+            <span class="material-symbols-outlined" style="font-size:18px">receipt_long</span> New Receipt
+        </button>
+    </div>
+</div>
+
+<!-- ── Receipt History Table ── -->
+<div class="table-container">
+    <table class="data-table" id="receipt-table">
+        <thead>
+            <tr>
+                <th>Receipt #</th>
+                <th>Date</th>
+                <th>Student</th>
+                <th>Amount Paid (₦)</th>
+                <th style="text-align:right;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if recent_receipts %}
+            {% for rcpt in recent_receipts %}
+            <tr>
+                <td><span
+                        style="font-family:monospace;font-weight:600;background:var(--accent);color:var(--primary);padding:3px 8px;border-radius:6px;font-size:12px;">{{
+                        rcpt.receipt_number }}</span></td>
+                <td>{{ rcpt.payment_date }}</td>
+                <td style="font-weight:600;">{{ rcpt.last_name }} {{ rcpt.first_name }} <span
+                        style="color:var(--text-muted);font-size:12px;">({{ rcpt.reg_number }})</span></td>
+                <td style="font-weight:600;color:var(--primary);">₦{{ "{:,.2f}".format(rcpt.amount_paid) }}</td>
+                <td style="text-align:right;">
+                    <a href="{{ url_for('fees.view_receipt', receipt_number=rcpt.receipt_number) }}" target="_blank"
+                        class="btn btn-sm btn-outline" title="Print">
+                        <i class="fas fa-print"></i>
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="5" class="no-data">No receipts yet — click "New Receipt" to start</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     MODAL: NEW RECEIPT
+═════════════════════════════════════════════════════════════════ -->
+<div id="receipt-modal" class="modal-overlay"
+    style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;">
+    <div
+        style="background:#fff;width:640px;max-height:92vh;overflow-y:auto;border-radius:12px;padding:24px;box-shadow:0 8px 32px rgba(0,0,0,.2);">
+        <div
+            style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+            <h3 style="margin:0;"><i class="fas fa-calculator"></i> &nbsp;Fee Calculator</h3>
+            <button id="close-receipt-modal"
+                style="background:none;border:none;font-size:24px;cursor:pointer;">&times;</button>
+        </div>
+
+        <form id="add-receipt-form">
+            <!-- Row 1: Session + Term -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+                <div class="form-group">
+                    <label>Session *</label>
+                    <select id="rec-session-id" class="form-control" required>
+                        {% for sess in sessions %}
+                        <option value="{{ sess.id }}" {% if current_session and sess.id==current_session.id %}selected{%
+                            endif %}>{{ sess.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Term *</label>
+                    <select id="rec-term-id" class="form-control" required>
+                        {% if current_term %}
+                        <option value="{{ current_term.id }}">Term {{ current_term.term_number }}</option>
+                        {% endif %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Row 2: Class filter + Student -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+                <div class="form-group">
+                    <label>Class (Filter)</label>
+                    <select id="rec-class-id" class="form-control">
+                        <option value="">All Classes</option>
+                        {% for cls in classes %}
+                        <option value="{{ cls.id }}">{{ cls.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Student *</label>
+                    <select id="rec-student-id" class="form-control" required>
+                        <option value="">Select Student</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Auto-load from template notice -->
+            <div id="template-notice"
+                style="display:none;background:var(--accent-light);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--primary);">
+                <i class="fas fa-info-circle"></i> &nbsp;Class fee template loaded. You can edit amounts below.
+            </div>
+
+            <!-- Fee Items -->
+            <h4 style="font-size:14px;font-weight:700;margin:0 0 10px;color:var(--primary);">Fee Items</h4>
+            <div id="fee-items-container"></div>
+            <button type="button" id="add-item-btn" class="btn btn-sm btn-outline" style="margin-bottom:14px;">+ Add
+                Item</button>
+
+            <!-- Total and Balance -->
+            <div style="background:var(--accent-light);padding:14px;border-radius:8px;margin-bottom:14px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                    <span style="color:var(--text-muted);">Class Total Due</span>
+                    <strong id="template-total-disp">—</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                    <span style="color:var(--text-muted);">Amount Paying Now</span>
+                    <strong style="color:var(--primary);">₦<span id="total-amount">0.00</span></strong>
+                </div>
+            </div>
+
+            <div
+                style="display:flex;justify-content:flex-end;gap:10px;padding-top:12px;border-top:1px solid var(--border);">
+                <button type="button" class="btn btn-light" id="cancel-receipt-modal">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-print"></i> &nbsp;Generate &
+                    Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     MODAL: BULK CLASS FEE SETUP
+═════════════════════════════════════════════════════════════════ -->
+<div id="bulk-modal" class="modal-overlay"
+    style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;">
+    <div
+        style="background:#fff;width:600px;max-height:92vh;overflow-y:auto;border-radius:12px;padding:24px;box-shadow:0 8px 32px rgba(0,0,0,.2);">
+        <div
+            style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+            <h3 style="margin:0;"><span class="material-symbols-outlined"
+                    style="vertical-align:middle;margin-right:6px;">groups</span>Bulk Class Fee Setup</h3>
+            <button id="close-bulk-modal"
+                style="background:none;border:none;font-size:24px;cursor:pointer;">&times;</button>
+        </div>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">Assign a standard fee structure to an
+            entire class. When generating individual receipts, this template is auto-loaded.</p>
+
+        <form id="bulk-fee-form">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+                <div class="form-group">
+                    <label>Class *</label>
+                    <select id="bulk-class-id" class="form-control" required>
+                        <option value="">Select Class</option>
+                        {% for cls in classes %}
+                        <option value="{{ cls.id }}">{{ cls.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Session *</label>
+                    <select id="bulk-session-id" class="form-control" required>
+                        {% for sess in sessions %}
+                        <option value="{{ sess.id }}" {% if current_session and sess.id==current_session.id %}selected{%
+                            endif %}>{{ sess.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Term *</label>
+                    <select id="bulk-term-id" class="form-control" required>
+                        {% if current_term %}
+                        <option value="{{ current_term.id }}">Term {{ current_term.term_number }}</option>
+                        {% endif %}
+                    </select>
+                </div>
+            </div>
+
+            <h4 style="font-size:14px;font-weight:700;margin:0 0 10px;color:var(--primary);">Fee Items</h4>
+            <div id="bulk-items-container">
+                <div class="bulk-item" style="display:flex;gap:10px;margin-bottom:8px;">
+                    <input type="text" class="form-control b-desc" placeholder="e.g. Tuition Fee" required>
+                    <input type="number" class="form-control b-amt" placeholder="Amount (₦)" min="0" step="0.01"
+                        style="width:130px;" required>
+                    <button type="button" class="btn btn-danger rm-bulk-item" style="padding:4px 8px;">&times;</button>
+                </div>
+            </div>
+            <button type="button" id="add-bulk-item" class="btn btn-sm btn-outline" style="margin-bottom:14px;">+ Add
+                Item</button>
+
+            <div
+                style="background:var(--accent-light);padding:12px;border-radius:8px;display:flex;justify-content:space-between;margin-bottom:14px;">
+                <strong>Total:</strong>
+                <strong style="color:var(--primary);">₦<span id="bulk-total">0.00</span></strong>
+            </div>
+
+            <div id="bulk-existing-notice"
+                style="display:none;background:#fff8e1;border:1px solid #f0c040;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;">
+                <i class="fas fa-edit"></i> &nbsp;Existing template loaded — saving will overwrite it.
+            </div>
+
+            <div
+                style="display:flex;justify-content:flex-end;gap:10px;padding-top:12px;border-top:1px solid var(--border);">
+                <button type="button" class="btn btn-light" id="cancel-bulk-modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">
+                    <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;">save</span>
+                    Save Class Fees
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     MODAL: LOGO UPLOAD
+═════════════════════════════════════════════════════════════════ -->
+<div id="logo-modal" class="modal-overlay"
+    style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:#fff;width:440px;border-radius:12px;padding:24px;box-shadow:0 8px 32px rgba(0,0,0,.2);">
+        <div
+            style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+            <h3 style="margin:0;"><span class="material-symbols-outlined"
+                    style="vertical-align:middle;margin-right:6px;">image</span>Upload School Logo</h3>
+            <button id="close-logo-modal"
+                style="background:none;border:none;font-size:24px;cursor:pointer;">&times;</button>
+        </div>
+
+        <!-- Current logo preview -->
+        <div style="text-align:center;margin-bottom:16px;">
+            {% if school_settings and school_settings.logo_path %}
+            <img src="{{ url_for('static', filename='uploads/' + school_settings.logo_path) }}" id="logo-preview"
+                style="max-height:80px;border-radius:8px;object-fit:contain;border:1px solid var(--border);padding:4px;">
+            {% else %}
+            <img src="" id="logo-preview" style="max-height:80px;border-radius:8px;display:none;">
+            <p id="no-logo-msg" style="color:var(--text-muted);font-size:13px;">No logo uploaded yet — choose a file
+                below.</p>
+            {% endif %}
+        </div>
+
+        <form id="logo-upload-form" enctype="multipart/form-data">
+            <div class="form-group">
+                <label>Choose Image File</label>
+                <input type="file" id="logo-file" name="logo" accept="image/*" class="form-control" required
+                    style="padding:8px;">
+            </div>
+            <div
+                style="display:flex;justify-content:flex-end;gap:10px;padding-top:12px;border-top:1px solid var(--border);">
+                <button type="button" class="btn btn-light" id="cancel-logo-modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Upload Logo</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+        // ── Utility ──────────────────────────────────────────────
+        function fmt(n) { return parseFloat(n || 0).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,'); }
+
+        function modalShow(el) { el.style.display = 'flex'; }
+        function modalHide(el) { el.style.display = 'none'; }
+
+        // ── Modal references ─────────────────────────────────────
+        const receiptModal = document.getElementById('receipt-modal');
+        const bulkModal = document.getElementById('bulk-modal');
+        const logoModal = document.getElementById('logo-modal');
+
+        document.getElementById('add-receipt-btn').addEventListener('click', () => { modalShow(receiptModal); initReceiptModal(); });
+        document.getElementById('open-bulk-btn').addEventListener('click', () => { modalShow(bulkModal); });
+        document.getElementById('open-logo-btn').addEventListener('click', () => { modalShow(logoModal); });
+
+        ['close-receipt-modal', 'cancel-receipt-modal'].forEach(id => document.getElementById(id).addEventListener('click', () => modalHide(receiptModal)));
+        ['close-bulk-modal', 'cancel-bulk-modal'].forEach(id => document.getElementById(id).addEventListener('click', () => modalHide(bulkModal)));
+        ['close-logo-modal', 'cancel-logo-modal'].forEach(id => document.getElementById(id).addEventListener('click', () => modalHide(logoModal)));
+
+        // ══════════════════════════════════════════════════════════
+        //  RECEIPT MODAL logic
+        // ══════════════════════════════════════════════════════════
+        const recSession = document.getElementById('rec-session-id');
+        const recTerm = document.getElementById('rec-term-id');
+        const recClass = document.getElementById('rec-class-id');
+        const recStudent = document.getElementById('rec-student-id');
+        const itemsCont = document.getElementById('fee-items-container');
+        const totalSpan = document.getElementById('total-amount');
+        const tmplTotalEl = document.getElementById('template-total-disp');
+        const tmplNotice = document.getElementById('template-notice');
+
+        function makeItem(desc = '', amt = '') {
+            const div = document.createElement('div');
+            div.className = 'fee-item';
+            div.style.cssText = 'display:flex;gap:10px;margin-bottom:8px;';
+            div.innerHTML = `
+            <input type="text"   class="form-control item-desc" placeholder="Description" value="${desc}" required>
+            <input type="number" class="form-control item-amt"  placeholder="Amount (₦)" min="0" step="0.01" style="width:130px;" value="${amt}" required>
+            <button type="button" class="btn btn-danger rm-item" style="padding:4px 8px;">&times;</button>
+        `;
+            div.querySelector('.rm-item').addEventListener('click', () => { div.remove(); calcTotal(); });
+            div.querySelector('.item-amt').addEventListener('input', calcTotal);
+            return div;
+        }
+
+        function calcTotal() {
+            let t = 0;
+            document.querySelectorAll('#fee-items-container .item-amt').forEach(i => t += parseFloat(i.value || 0));
+            totalSpan.textContent = fmt(t);
+        }
+
+        document.getElementById('add-item-btn').addEventListener('click', () => {
+            itemsCont.appendChild(makeItem());
+        });
+
+        async function loadTerms(sessionId, targetSelect) {
+            const res = await fetch(`/fees/api/terms/${sessionId}`);
+            const terms = await res.json();
+            targetSelect.innerHTML = '';
+            terms.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.id;
+                opt.textContent = `Term ${t.term_number}`;
+                targetSelect.appendChild(opt);
+            });
+        }
+
+        async function loadStudents() {
+            const classId = recClass.value;
+            const url = classId ? `/fees/api/students?class_id=${classId}` : '/fees/api/students';
+            const res = await fetch(url);
+            const students = await res.json();
+            recStudent.innerHTML = '<option value="">Select Student</option>';
+            students.forEach(s => {
+                recStudent.innerHTML += `<option value="${s.id}">${s.last_name} ${s.first_name} (${s.reg_number})</option>`;
+            });
+        }
+
+        async function loadTemplate() {
+            const classId = recClass.value;
+            const sessionId = recSession.value;
+            const termId = recTerm.value;
+            if (!classId || !sessionId || !termId) return;
+
+            const res = await fetch(`/fees/api/template?class_id=${classId}&session_id=${sessionId}&term_id=${termId}`);
+            const tmpl = await res.json();
+            itemsCont.innerHTML = '';
+            if (tmpl && tmpl.items && tmpl.items.length) {
+                tmpl.items.forEach(i => itemsCont.appendChild(makeItem(i.desc, i.amt)));
+                tmplTotalEl.textContent = '₦' + fmt(tmpl.total_amount);
+                tmplNotice.style.display = 'block';
+            } else {
+                itemsCont.appendChild(makeItem());
+                tmplTotalEl.textContent = '—';
+                tmplNotice.style.display = 'none';
+            }
+            calcTotal();
+        }
+
+        async function initReceiptModal() {
+            // Reset items
+            itemsCont.innerHTML = '';
+            itemsCont.appendChild(makeItem());
+            calcTotal();
+            tmplNotice.style.display = 'none';
+            tmplTotalEl.textContent = '—';
+
+            // Load terms for the current session, then load students
+            recClass.value = '';
+            recStudent.innerHTML = '<option value="">Loading students…</option>';
+            await loadTerms(recSession.value, recTerm);
+            await loadStudents();
+        }
+
+        recSession.addEventListener('change', async () => {
+            await loadTerms(recSession.value, recTerm);
+            await loadStudents();
+            loadTemplate();
+        });
+        recTerm.addEventListener('change', loadTemplate);
+        recClass.addEventListener('change', async () => {
+            await loadStudents();
+            loadTemplate();
+        });
+
+        // Receipt submit
+        document.getElementById('add-receipt-form').addEventListener('submit', async e => {
+            e.preventDefault();
+            const items = [];
+            document.querySelectorAll('#fee-items-container .fee-item').forEach(it => {
+                items.push({ desc: it.querySelector('.item-desc').value, amt: parseFloat(it.querySelector('.item-amt').value || 0) });
+            });
+            const total = items.reduce((s, i) => s + i.amt, 0);
+
+            const payload = {
+                student_id: recStudent.value,
+                session_id: recSession.value,
+                term_id: recTerm.value,
+                amount_paid: total,
+                description: JSON.stringify(items)
+            };
+
+            const res = await fetch('/fees/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            const data = await res.json();
+            if (data.success) {
+                window.open(`/fees/receipt/${data.receipt_number}`, '_blank');
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        });
+
+        // ══════════════════════════════════════════════════════════
+        //  BULK FEE MODAL logic
+        // ══════════════════════════════════════════════════════════
+        const bulkSession = document.getElementById('bulk-session-id');
+        const bulkTerm = document.getElementById('bulk-term-id');
+        const bulkClass = document.getElementById('bulk-class-id');
+        const bulkCont = document.getElementById('bulk-items-container');
+        const bulkTotal = document.getElementById('bulk-total');
+        const bulkNotice = document.getElementById('bulk-existing-notice');
+
+        function makeBulkItem(desc = '', amt = '') {
+            const div = document.createElement('div');
+            div.className = 'bulk-item';
+            div.style.cssText = 'display:flex;gap:10px;margin-bottom:8px;';
+            div.innerHTML = `
+            <input type="text"   class="form-control b-desc" placeholder="e.g. Tuition Fee" value="${desc}" required>
+            <input type="number" class="form-control b-amt"  placeholder="Amount (₦)" min="0" step="0.01" style="width:130px;" value="${amt}" required>
+            <button type="button" class="btn btn-danger rm-bulk-item" style="padding:4px 8px;">&times;</button>
+        `;
+            div.querySelector('.rm-bulk-item').addEventListener('click', () => { div.remove(); calcBulkTotal(); });
+            div.querySelector('.b-amt').addEventListener('input', calcBulkTotal);
+            return div;
+        }
+
+        function calcBulkTotal() {
+            let t = 0;
+            document.querySelectorAll('#bulk-items-container .b-amt').forEach(i => t += parseFloat(i.value || 0));
+            bulkTotal.textContent = fmt(t);
+        }
+
+        document.getElementById('add-bulk-item').addEventListener('click', () => {
+            bulkCont.appendChild(makeBulkItem());
+        });
+        document.querySelectorAll('#bulk-items-container .bulk-item').forEach(it => {
+            it.querySelector('.rm-bulk-item').addEventListener('click', () => { it.remove(); calcBulkTotal(); });
+            it.querySelector('.b-amt').addEventListener('input', calcBulkTotal);
+        });
+
+        bulkSession.addEventListener('change', () => loadTerms(bulkSession.value, bulkTerm));
+
+        async function loadBulkTemplate() {
+            const cls = bulkClass.value, sess = bulkSession.value, term = bulkTerm.value;
+            if (!cls || !sess || !term) return;
+            const res = await fetch(`/fees/api/template?class_id=${cls}&session_id=${sess}&term_id=${term}`);
+            const tmpl = await res.json();
+            bulkCont.innerHTML = '';
+            if (tmpl && tmpl.items && tmpl.items.length) {
+                tmpl.items.forEach(i => bulkCont.appendChild(makeBulkItem(i.desc, i.amt)));
+                bulkNotice.style.display = 'block';
+            } else {
+                bulkCont.appendChild(makeBulkItem());
+                bulkNotice.style.display = 'none';
+            }
+            calcBulkTotal();
+        }
+
+        bulkClass.addEventListener('change', loadBulkTemplate);
+        bulkTerm.addEventListener('change', loadBulkTemplate);
+
+        document.getElementById('bulk-fee-form').addEventListener('submit', async e => {
+            e.preventDefault();
+            const items = [];
+            document.querySelectorAll('#bulk-items-container .bulk-item').forEach(it => {
+                items.push({ desc: it.querySelector('.b-desc').value, amt: parseFloat(it.querySelector('.b-amt').value || 0) });
+            });
+            const payload = {
+                class_id: bulkClass.value,
+                session_id: bulkSession.value,
+                term_id: bulkTerm.value,
+                items: items
+            };
+            const res = await fetch('/fees/template/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            const data = await res.json();
+            if (data.success) {
+                modalHide(bulkModal);
+                alert(`✅ Fee template saved! Total: ₦${fmt(data.total)}`);
+            } else {
+                alert('Error: ' + data.message);
+            }
+        });
+
+        // ══════════════════════════════════════════════════════════
+        //  LOGO UPLOAD logic
+        // ══════════════════════════════════════════════════════════
+        const logoFileInput = document.getElementById('logo-file');
+        const logoPreview = document.getElementById('logo-preview');
+
+        logoFileInput.addEventListener('change', () => {
+            const file = logoFileInput.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                logoPreview.src = e.target.result;
+                logoPreview.style.display = 'block';
+                const msg = document.getElementById('no-logo-msg');
+                if (msg) msg.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        });
+
+        document.getElementById('logo-upload-form').addEventListener('submit', async e => {
+            e.preventDefault();
+            const formData = new FormData();
+            formData.append('logo', logoFileInput.files[0]);
+            const res = await fetch('/fees/settings/upload-logo', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.success) {
+                alert('✅ Logo uploaded successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        });
+
+    });
+</script>
+{% endblock %}

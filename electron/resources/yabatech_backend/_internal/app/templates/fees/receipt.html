@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt {{ receipt.receipt_number }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #e8e8e8;
+            padding: 24px;
+        }
+
+        .page {
+            max-width: 680px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 6px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, .12);
+        }
+
+        /* Header */
+        .rec-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 24px 32px;
+            border-bottom: 3px solid #375E48;
+        }
+
+        .rec-header img {
+            height: 72px;
+            width: 72px;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        .rec-header .school-info h1 {
+            font-size: 20px;
+            color: #1a2b23;
+        }
+
+        .rec-header .school-info p {
+            font-size: 13px;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        .rec-title {
+            text-align: right;
+            margin-left: auto;
+        }
+
+        .rec-title h2 {
+            font-size: 22px;
+            color: #375E48;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .rec-title .rec-no {
+            font-size: 12px;
+            font-family: monospace;
+            background: #EAF2EC;
+            color: #375E48;
+            padding: 4px 10px;
+            border-radius: 6px;
+            margin-top: 6px;
+            display: inline-block;
+        }
+
+        /* Meta row */
+        .rec-meta {
+            display: flex;
+            justify-content: space-between;
+            padding: 16px 32px;
+            background: #f8faf9;
+            border-bottom: 1px solid #e0e7e2;
+            font-size: 13px;
+            color: #444;
+        }
+
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .meta-label {
+            font-weight: 700;
+            color: #1a2b23;
+        }
+
+        /* Student */
+        .student-box {
+            margin: 20px 32px;
+            padding: 14px 18px;
+            background: #f2f7f4;
+            border-left: 4px solid #375E48;
+            border-radius: 6px;
+        }
+
+        .student-box p {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .student-box p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Table */
+        .items-section {
+            padding: 0 32px 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+
+        th {
+            background: #375E48;
+            color: #fff;
+            padding: 10px 12px;
+            text-align: left;
+            font-size: 13px;
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+            color: #333;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .amt-col {
+            text-align: right;
+        }
+
+        /* Summary box */
+        .summary {
+            margin: 0 32px 24px;
+            border: 1px solid #e0e7e2;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 18px;
+            font-size: 14px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .summary-row:last-child {
+            border-bottom: none;
+        }
+
+        .summary-row.total {
+            background: #375E48;
+            color: #fff;
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .summary-row.paid {
+            background: #EAF2EC;
+        }
+
+        .summary-row.balance {
+            background: {
+                % if balance>0 %
+            }
+
+            #FFF3E0 {
+                % else %
+            }
+
+            #EAF2EC {
+                % endif %
+            }
+
+            ;
+            font-weight: 700;
+        }
+
+        .balance-val {
+            color: {
+                % if balance>0 %
+            }
+
+            #E65100 {
+                % else %
+            }
+
+            #2E7D32 {
+                % endif %
+            }
+
+            ;
+        }
+
+        /* Footer */
+        .rec-footer {
+            text-align: center;
+            padding: 18px 32px 24px;
+            font-size: 12px;
+            color: #888;
+            border-top: 1px dashed #ccc;
+        }
+
+        /* Print button */
+        .print-wrap {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .print-btn {
+            background: #375E48;
+            color: #fff;
+            border: none;
+            padding: 12px 32px;
+            border-radius: 6px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        @media print {
+            body {
+                background: none;
+                padding: 0;
+            }
+
+            .page {
+                box-shadow: none;
+                border-radius: 0;
+            }
+
+            .print-wrap {
+                display: none;
+            }
+
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+
+        <!-- Header -->
+        <div class="rec-header">
+            {% if settings and settings.logo_path %}
+            <img src="/static/uploads/{{ settings.logo_path }}" alt="Logo">
+            {% endif %}
+            <div class="school-info">
+                <h1>{{ settings.school_name if settings else 'Glorious Future Academy' }}</h1>
+                <p>{{ settings.address if settings else '' }}</p>
+            </div>
+            <div class="rec-title">
+                <h2>Fee Receipt</h2>
+                <span class="rec-no">{{ receipt.receipt_number }}</span>
+            </div>
+        </div>
+
+        <!-- Meta -->
+        <div class="rec-meta">
+            <div class="meta-item">
+                <span class="meta-label">Date Issued</span>
+                <span>{{ date_issued }}</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Academic Session</span>
+                <span>{{ session.name if session else 'N/A' }}</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Term</span>
+                <span>Term {{ term.term_number if term else 'N/A' }}</span>
+            </div>
+        </div>
+
+        <!-- Student -->
+        <div class="student-box">
+            <p><strong>Student:</strong> &nbsp;{{ receipt.last_name }} {{ receipt.first_name }}</p>
+            <p><strong>Reg No:</strong> &nbsp;{{ receipt.reg_number }}</p>
+        </div>
+
+        <!-- Fee Items -->
+        <div class="items-section">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th class="amt-col">Amount (₦)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td>{{ item.desc }}</td>
+                        <td class="amt-col">{{ "{:,.2f}".format(item.amt) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="2" style="color:#999;text-align:center;padding:20px;">No items</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Summary -->
+        <div class="summary">
+            {% if template_total > 0 %}
+            <div class="summary-row">
+                <span>Class Total Due (Term)</span>
+                <span>₦{{ "{:,.2f}".format(template_total) }}</span>
+            </div>
+            {% endif %}
+            <div class="summary-row paid">
+                <span>Amount Paid (This Receipt)</span>
+                <span>₦{{ "{:,.2f}".format(receipt.amount_paid) }}</span>
+            </div>
+            {% if template_total > 0 %}
+            <div class="summary-row paid">
+                <span>Total Paid This Term</span>
+                <span>₦{{ "{:,.2f}".format(total_paid) }}</span>
+            </div>
+            <div class="summary-row balance">
+                <span>Outstanding Balance</span>
+                <span class="balance-val">
+                    {% if balance > 0 %}₦{{ "{:,.2f}".format(balance) }} OWING{% else %}FULLY PAID ✓{% endif %}
+                </span>
+            </div>
+            {% endif %}
+            <div class="summary-row total">
+                <span>Amount Paid Now</span>
+                <span>₦{{ "{:,.2f}".format(receipt.amount_paid) }}</span>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="rec-footer">
+            <p>Payment received and confirmed. &nbsp;|&nbsp; Keep this receipt for your records.</p>
+            <p style="margin-top:6px;">Thank you!</p>
+        </div>
+    </div>
+
+    <div class="print-wrap">
+        <button class="print-btn" onclick="window.print()"><i class="fas fa-print"></i> &nbsp;Print Receipt</button>
+    </div>
+</body>
+
+</html>
